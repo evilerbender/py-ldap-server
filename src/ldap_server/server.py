@@ -204,7 +204,7 @@ Test the server:
     parser.add_argument(
         "--version", "-v",
         action="version",
-        version="py-ldap-server 0.2.0"
+        version="py-ldap-server 0.3.0"
     )
 
     return parser

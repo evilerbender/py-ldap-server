@@ -267,7 +267,7 @@ Clear description of the bug and expected behavior.
 ## Environment
 - OS: [e.g., Ubuntu 20.04, macOS 12.0, Windows 11]
 - Python Version: [e.g., 3.12.2]
-- py-ldap-server Version: [e.g., 0.1.0]
+- py-ldap-server Version: [e.g., 0.3.0]
 - LDAP Client: [e.g., ldapsearch 2.4.57]
 
 ## Steps to Reproduce
