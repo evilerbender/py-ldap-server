@@ -276,6 +276,12 @@ class LazyLDIFTreeEntry(LDIFTreeEntry):
         """Set the cache for lazy loading."""
         self._cache = cache
     
+    def _get_dn_text(self) -> str:
+        """Get DN as text string, handling both string and DistinguishedName objects."""
+        if hasattr(self.dn, 'getText'):
+            return self.dn.getText()
+        return str(self.dn)
+    
     def _ensure_loaded(self):
         """Ensure attributes are loaded from lazy reference if needed."""
         if not self._lazy_loaded and self._lazy_ref:
@@ -285,9 +291,9 @@ class LazyLDIFTreeEntry(LDIFTreeEntry):
                 for key, values in attrs.items():
                     self._attributes[key] = [str(v).encode('utf-8') for v in values]
                 self._lazy_loaded = True
-                logging.debug(f"Lazy loaded attributes for {self.dn}")
+                logging.debug(f"Lazy loaded attributes for {self._get_dn_text()}")
             except Exception as e:
-                logging.error(f"Failed to lazy load attributes for {self.dn}: {e}")
+                logging.error(f"Failed to lazy load attributes for {self._get_dn_text()}: {e}")
                 self._lazy_loaded = True  # Prevent infinite retry
     
     def get(self, key: str, default=None):
@@ -335,7 +341,7 @@ class LazyLDIFTreeEntry(LDIFTreeEntry):
             self._lazy_loaded = False
             if self._lazy_ref:
                 self._lazy_ref.unload()
-            logging.debug(f"Unloaded lazy attributes for {self.dn}")
+            logging.debug(f"Unloaded lazy attributes for {self._get_dn_text()}")
 
 
 class PaginatedSearchResult:
