@@ -109,7 +109,7 @@ class TestUnifiedJSONStorage:
         
         # Initialize storage in single file mode
         storage = JSONStorage(
-            json_files=str(temp_json_file),
+            json_file_paths=str(temp_json_file),
             enable_file_watching=False
         )
         
@@ -131,7 +131,7 @@ class TestUnifiedJSONStorage:
     def test_multi_file_mode(self, temp_json_files):
         """Test multi-file federation mode."""
         storage = JSONStorage(
-            json_files=[str(f) for f in temp_json_files],
+            json_file_paths=[str(f) for f in temp_json_files],
             merge_strategy="last_wins",
             enable_file_watching=False
         )
@@ -157,7 +157,7 @@ class TestUnifiedJSONStorage:
         
         # Initialize in read-only mode
         storage = JSONStorage(
-            json_files=str(temp_json_file),
+            json_file_paths=str(temp_json_file),
             read_only=True,
             enable_file_watching=False
         )
@@ -201,7 +201,7 @@ class TestUnifiedJSONStorage:
             json.dump(sample_entries, f, indent=2)
         
         storage = JSONStorage(
-            json_files=str(temp_json_file),
+            json_file_paths=str(temp_json_file),
             read_only=False,
             enable_file_watching=False,
             enable_backups=False  # Disable for testing
@@ -288,7 +288,7 @@ class TestUnifiedJSONStorage:
         
         # Test last_wins strategy
         storage = JSONStorage(
-            json_files=[str(file1), str(file2)],
+            json_file_paths=[str(file1), str(file2)],
             merge_strategy="last_wins",
             enable_file_watching=False
         )
@@ -305,7 +305,7 @@ class TestUnifiedJSONStorage:
         
         # Test first_wins strategy
         storage = JSONStorage(
-            json_files=[str(file1), str(file2)],
+            json_file_paths=[str(file1), str(file2)],
             merge_strategy="first_wins",
             enable_file_watching=False
         )
@@ -323,7 +323,7 @@ class TestUnifiedJSONStorage:
         # Test error strategy
         with pytest.raises(ValueError, match="Duplicate DN"):
             storage = JSONStorage(
-                json_files=[str(file1), str(file2)],
+                json_file_paths=[str(file1), str(file2)],
                 merge_strategy="error",
                 enable_file_watching=False
             )
@@ -354,7 +354,7 @@ class TestUnifiedJSONStorage:
         
         # Enable password hashing
         storage = JSONStorage(
-            json_files=str(temp_json_file),
+            json_file_paths=str(temp_json_file),
             hash_plain_passwords=True,
             read_only=False,
             enable_file_watching=False
@@ -383,7 +383,7 @@ class TestUnifiedJSONStorage:
         
         with pytest.raises(json.JSONDecodeError):
             storage = JSONStorage(
-                json_files=str(temp_json_file),
+                json_file_paths=str(temp_json_file),
                 enable_file_watching=False
             )
     
@@ -402,7 +402,7 @@ class TestUnifiedJSONStorage:
         
         with pytest.raises(ValueError, match="missing 'attributes' field"):
             storage = JSONStorage(
-                json_files=str(temp_json_file),
+                json_file_paths=str(temp_json_file),
                 enable_file_watching=False
             )
     
@@ -412,7 +412,7 @@ class TestUnifiedJSONStorage:
         
         # Should not raise error, but log warning
         storage = JSONStorage(
-            json_files=nonexistent_file,
+            json_file_paths=nonexistent_file,
             enable_file_watching=False
         )
         
@@ -433,7 +433,7 @@ class TestUnifiedJSONStorage:
             json.dump(sample_entries, f)
         
         storage = JSONStorage(
-            json_files=str(temp_json_file),
+            json_file_paths=str(temp_json_file),
             enable_file_watching=False
         )
         
@@ -448,7 +448,7 @@ class TestUnifiedJSONStorage:
     def test_stats_comprehensive(self, temp_json_files):
         """Test comprehensive statistics reporting."""
         storage = JSONStorage(
-            json_files=[str(f) for f in temp_json_files],
+            json_file_paths=[str(f) for f in temp_json_files],
             merge_strategy="last_wins",
             read_only=True,
             enable_file_watching=True,
@@ -598,7 +598,7 @@ class TestReadOnlyModeUseCases:
         
         # LDAP server consumes in read-only mode
         storage = JSONStorage(
-            json_files=str(temp_json_file),
+            json_file_paths=str(temp_json_file),
             read_only=True,
             enable_file_watching=True  # Watch for external changes
         )
@@ -633,7 +633,7 @@ class TestReadOnlyModeUseCases:
     def test_multi_file_external_management(self, temp_json_files):
         """Test multi-file external configuration management."""
         storage = JSONStorage(
-            json_files=[str(f) for f in temp_json_files],
+            json_file_paths=[str(f) for f in temp_json_files],
             read_only=True,
             merge_strategy="last_wins",
             enable_file_watching=True

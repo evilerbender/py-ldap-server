@@ -222,7 +222,7 @@ class TestUnifiedJSONStorageWriteOperations:
     
     def test_add_entry(self, temp_json_file, sample_entries):
         """Test adding a new entry."""
-        storage = JSONStorage(json_files=[temp_json_file])
+        storage = JSONStorage(json_file_paths=[temp_json_file])
         
         new_entry_dn = "uid=jane,ou=users,dc=example,dc=com"
         new_entry_attrs = {
@@ -240,7 +240,7 @@ class TestUnifiedJSONStorageWriteOperations:
     
     def test_add_entry_duplicate_dn(self, temp_json_file, sample_entries):
         """Test adding entry with duplicate DN."""
-        storage = JSONStorage(json_files=[temp_json_file])
+        storage = JSONStorage(json_file_paths=[temp_json_file])
         
         # Try to add entry with existing DN
         result = storage.add_entry(
@@ -252,7 +252,7 @@ class TestUnifiedJSONStorageWriteOperations:
     
     def test_modify_entry(self, temp_json_file, sample_entries):
         """Test modifying an existing entry."""
-        storage = JSONStorage(json_files=[temp_json_file])
+        storage = JSONStorage(json_file_paths=[temp_json_file])
         
         result = storage.modify_entry(
             "uid=john,ou=users,dc=example,dc=com",
@@ -267,14 +267,14 @@ class TestUnifiedJSONStorageWriteOperations:
     
     def test_modify_nonexistent_entry(self, temp_json_file, sample_entries):
         """Test modifying a non-existent entry."""
-        storage = JSONStorage(json_files=[temp_json_file])
+        storage = JSONStorage(json_file_paths=[temp_json_file])
         
         result = storage.modify_entry("uid=nonexistent,ou=users,dc=example,dc=com", {"cn": ["New Name"]})
         assert result is False
     
     def test_delete_entry(self, temp_json_file, sample_entries):
         """Test deleting an entry."""
-        storage = JSONStorage(json_files=[temp_json_file])
+        storage = JSONStorage(json_file_paths=[temp_json_file])
         
         result = storage.delete_entry("uid=john,ou=users,dc=example,dc=com")
         assert result is True
@@ -284,14 +284,14 @@ class TestUnifiedJSONStorageWriteOperations:
     
     def test_delete_nonexistent_entry(self, temp_json_file, sample_entries):
         """Test deleting a non-existent entry."""
-        storage = JSONStorage(json_files=[temp_json_file])
+        storage = JSONStorage(json_file_paths=[temp_json_file])
         
         result = storage.delete_entry("uid=nonexistent,ou=users,dc=example,dc=com")
         assert result is False
     
     def test_bulk_write_entries(self, temp_json_file, sample_entries):
         """Test bulk writing multiple entries."""
-        storage = JSONStorage(json_files=[temp_json_file])
+        storage = JSONStorage(json_file_paths=[temp_json_file])
         
         new_entries = [
             {
@@ -323,7 +323,7 @@ class TestUnifiedJSONStorageWriteOperations:
     
     def test_bulk_write_invalid_entries(self, temp_json_file, sample_entries):
         """Test bulk writing with some invalid entries."""
-        storage = JSONStorage(json_files=[temp_json_file], enable_file_watching=False)
+        storage = JSONStorage(json_file_paths=[temp_json_file], enable_file_watching=False)
         
         entries_with_invalid = [
             {
@@ -357,7 +357,7 @@ class TestJSONStorageWriteOperations:
     
     def test_add_entry_legacy(self, temp_json_file, sample_entries):
         """Test adding entry with unified JSONStorage."""
-        storage = JSONStorage(json_files=[str(temp_json_file)])
+        storage = JSONStorage(json_file_paths=[str(temp_json_file)])
         
         new_entry_dn = "uid=legacy,ou=users,dc=example,dc=com"
         new_entry_attrs = {
@@ -374,7 +374,7 @@ class TestJSONStorageWriteOperations:
     
     def test_modify_entry_legacy(self, temp_json_file, sample_entries):
         """Test modifying entry with unified JSONStorage."""
-        storage = JSONStorage(json_files=[str(temp_json_file)])
+        storage = JSONStorage(json_file_paths=[str(temp_json_file)])
         
         result = storage.modify_entry(
             "uid=john,ou=users,dc=example,dc=com",
@@ -389,7 +389,7 @@ class TestJSONStorageWriteOperations:
     
     def test_delete_entry_legacy(self, temp_json_file, sample_entries):
         """Test deleting entry with unified JSONStorage."""
-        storage = JSONStorage(json_files=[str(temp_json_file)])
+        storage = JSONStorage(json_file_paths=[str(temp_json_file)])
         
         result = storage.delete_entry("uid=john,ou=users,dc=example,dc=com")
         assert result is True
@@ -399,7 +399,7 @@ class TestJSONStorageWriteOperations:
     
     def test_bulk_write_legacy(self, temp_json_file, sample_entries):
         """Test bulk write with unified JSONStorage."""
-        storage = JSONStorage(json_files=[str(temp_json_file)])
+        storage = JSONStorage(json_file_paths=[str(temp_json_file)])
         
         new_entries = [
             {

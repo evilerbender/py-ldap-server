@@ -246,7 +246,7 @@ class JSONStorage:
     
     def __init__(
         self,
-        json_files: Union[str, List[str], Path, List[Path]],
+        json_file_paths: Union[str, List[str], Path, List[Path]],
         read_only: bool = False,
         merge_strategy: str = "last_wins",
         hash_plain_passwords: bool = True,
@@ -262,7 +262,7 @@ class JSONStorage:
         Initialize unified JSON storage backend.
         
         Args:
-            json_files: Single file path or list of file paths
+            json_file_paths: Single file path or list of file paths
             read_only: If True, disable all write operations (for consuming external configs)
             merge_strategy: How to handle DN conflicts in multi-file mode ("last_wins", "first_wins", "error")
             hash_plain_passwords: Automatically hash plain text passwords
@@ -275,10 +275,10 @@ class JSONStorage:
             enable_backups: Create backups before write operations
         """
         # Normalize file paths
-        if isinstance(json_files, (str, Path)):
-            self.json_files = [Path(json_files)]
+        if isinstance(json_file_paths, (str, Path)):
+            self.json_files = [Path(json_file_paths)]
         else:
-            self.json_files = [Path(f) for f in json_files]
+            self.json_files = [Path(f) for f in json_file_paths]
         
         # Configuration
         self.read_only = read_only
@@ -788,7 +788,10 @@ class JSONStorage:
             if target_file:
                 file_path = Path(target_file)
             else:
-                file_path = self.json_files[0]  # Default to first file
+                if len(self.json_files) > 1:
+                    logging.error("Bulk write in federated mode requires explicit target_file specification")
+                    return False
+                file_path = self.json_files[0]
             
             # Load current entries
             current_entries = self._entries_by_file.get(str(file_path), [])
@@ -815,5 +818,6 @@ class JSONStorage:
             return False
 
 
-# For compatibility with existing code (can be removed later)
+# Compatibility alias for backward compatibility
+# This allows existing code using FederatedJSONStorage to continue working
 FederatedJSONStorage = JSONStorage

@@ -53,7 +53,7 @@ class LDAPServerService:
             log.msg(f"Merge strategy: {self.merge_strategy}")
             log.msg(f"Auto-reload: {self.enable_watcher}")
             storage = JSONStorage(
-                json_files=self.json_files,
+                json_file_paths=self.json_files,
                 merge_strategy=self.merge_strategy,
                 enable_file_watching=self.enable_watcher,
                 debounce_time=self.debounce_time
@@ -62,7 +62,7 @@ class LDAPServerService:
             log.msg(f"Using JSON backend: {self.json_path}")
             log.msg(f"Auto-reload: {self.enable_watcher}")
             storage = JSONStorage(
-                json_files=self.json_path,
+                json_file_paths=self.json_path,
                 enable_file_watching=self.enable_watcher
             )
         else:
