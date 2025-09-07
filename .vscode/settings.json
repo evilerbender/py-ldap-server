@@ -24,6 +24,7 @@
         "cd": true,
         "pwd": true,
         "uv": true,
+        "~/.local/bin/uv": true,
         "uvx": true,
         "git status": true,
         "git add": true,
