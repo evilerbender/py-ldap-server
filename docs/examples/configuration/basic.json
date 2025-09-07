@@ -1,0 +1,37 @@
+{
+  "base_dn": "dc=example,dc=com",
+  "entries": [
+    {
+      "dn": "dc=example,dc=com",
+      "objectClass": ["dcObject", "organization"],
+      "o": "Example Organization",
+      "dc": "example",
+      "description": "Root entry for example.com domain"
+    },
+    {
+      "dn": "ou=people,dc=example,dc=com", 
+      "objectClass": ["organizationalUnit"],
+      "ou": "people",
+      "description": "Container for user accounts"
+    },
+    {
+      "dn": "cn=admin,ou=people,dc=example,dc=com",
+      "objectClass": ["person", "organizationalPerson"],
+      "cn": "admin",
+      "sn": "Administrator", 
+      "userPassword": "admin",
+      "mail": "admin@example.com",
+      "description": "System administrator account"
+    },
+    {
+      "dn": "cn=user1,ou=people,dc=example,dc=com",
+      "objectClass": ["person", "organizationalPerson"],
+      "cn": "user1",
+      "sn": "User",
+      "givenName": "Test",
+      "userPassword": "password123",
+      "mail": "user1@example.com",
+      "description": "Standard user account"
+    }
+  ]
+}

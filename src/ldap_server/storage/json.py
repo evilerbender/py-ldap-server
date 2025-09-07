@@ -21,13 +21,15 @@ class JSONStorage:
     """
     Storage backend that loads LDAP entries from a JSON file and supports hot reload.
     """
-    def __init__(self, json_path: str, hash_plain_passwords: bool = True):
+    def __init__(self, json_path: str, hash_plain_passwords: bool = True, enable_watcher: bool = True):
         self.json_path = json_path
         self.hash_plain_passwords = hash_plain_passwords
+        self.enable_watcher = enable_watcher
         self._temp_dir = tempfile.mkdtemp(prefix="ldap_json_")
         self.root_ref: Dict[str, LDIFTreeEntry] = {"root": None}
         self._load_json()
-        self._start_file_watcher()
+        if self.enable_watcher:
+            self._start_file_watcher()
 
     def _load_json(self):
         """Load JSON data and build LDAP tree using LDIFTreeEntry."""
@@ -94,64 +96,82 @@ class JSONStorage:
         # Create root entry
         root = LDIFTreeEntry(self._temp_dir)
         
-        # Sort entries by DN depth to ensure parents are created before children
-        sorted_entries = sorted(entries, key=lambda e: len(e["dn"].split(",")))
+        # Create entries using a simpler approach similar to MemoryStorage
+        # Group entries by their DN for easy lookup
+        entries_by_dn = {entry["dn"]: entry["attributes"] for entry in entries}
+        created_entries = {"": root}  # Root entry with empty DN
         
-        # Keep track of created entries by DN
-        created_entries = {"": root}  # Root entry
+        # Process entries in order of DN depth (shortest first)
+        sorted_dns = sorted(entries_by_dn.keys(), key=lambda dn: dn.count(','))
         
-        for entry_data in sorted_entries:
-            dn_str = entry_data["dn"]
-            attributes = entry_data["attributes"]
-            
-            # Parse DN to get components
-            dn = distinguishedname.DistinguishedName(stringValue=dn_str)
-            
-            # Find parent DN
-            parent_dn = dn.up() if dn else distinguishedname.DistinguishedName("")
-            parent_dn_str = parent_dn.getText() if parent_dn else ""
-            
-            # Get parent entry (create if needed)
-            parent_entry = created_entries.get(parent_dn_str)
-            if parent_entry is None:
-                # Create intermediate parent if it doesn't exist
-                parent_entry = self._create_intermediate_entry(parent_dn_str, created_entries, root)
-            
-            # Get RDN (relative distinguished name) for this entry
-            rdn_components = list(dn.split())
-            rdn = rdn_components[0].getText() if rdn_components else ""
+        for dn_str in sorted_dns:
+            attributes = entries_by_dn[dn_str]
             
             try:
-                # Add child entry
+                # Parse DN
+                dn = distinguishedname.DistinguishedName(stringValue=dn_str)
+                
+                # Get the RDN (first component)
+                dn_components = list(dn.split())
+                if not dn_components:
+                    continue
+                
+                rdn = dn_components[0].getText()
+                
+                # Find parent DN
+                if len(dn_components) > 1:
+                    # Build parent DN
+                    parent_components = dn_components[1:]
+                    parent_dn = distinguishedname.DistinguishedName()
+                    for comp in reversed(parent_components):
+                        parent_dn = parent_dn.child(comp)
+                    parent_dn_str = parent_dn.getText()
+                else:
+                    parent_dn_str = ""
+                
+                # Get or create parent entry
+                parent_entry = created_entries.get(parent_dn_str)
+                if parent_entry is None:
+                    # Create missing parent entries
+                    parent_entry = self._ensure_parent_exists(parent_dn_str, created_entries, root)
+                
+                # Create this entry
                 child_entry = parent_entry.addChild(rdn, attributes)
                 created_entries[dn_str] = child_entry
                 logging.debug(f"Created entry: {dn_str}")
+                
             except Exception as e:
                 logging.error(f"Failed to create entry {dn_str}: {e}")
+                import traceback
+                traceback.print_exc()
         
         return root
-
-    def _create_intermediate_entry(self, dn_str: str, created_entries: Dict[str, LDIFTreeEntry], root: LDIFTreeEntry) -> LDIFTreeEntry:
-        """Create intermediate entries if they don't exist."""
-        if not dn_str:
+    
+    def _ensure_parent_exists(self, parent_dn_str: str, created_entries: Dict[str, LDIFTreeEntry], root: LDIFTreeEntry) -> LDIFTreeEntry:
+        """Ensure parent entry exists, creating intermediate entries if needed."""
+        if not parent_dn_str or parent_dn_str in created_entries:
+            return created_entries.get(parent_dn_str, root)
+        
+        # Parse parent DN
+        parent_dn = distinguishedname.DistinguishedName(stringValue=parent_dn_str)
+        parent_components = list(parent_dn.split())
+        
+        if not parent_components:
             return root
         
-        if dn_str in created_entries:
-            return created_entries[dn_str]
+        # Get grandparent
+        if len(parent_components) > 1:
+            grandparent_components = parent_components[1:]
+            grandparent_dn = distinguishedname.DistinguishedName()
+            for comp in reversed(grandparent_components):
+                grandparent_dn = grandparent_dn.child(comp)
+            grandparent_dn_str = grandparent_dn.getText()
+            grandparent_entry = self._ensure_parent_exists(grandparent_dn_str, created_entries, root)
+        else:
+            grandparent_entry = root
         
-        # Parse DN
-        dn = distinguishedname.DistinguishedName(stringValue=dn_str)
-        parent_dn = dn.up()
-        parent_dn_str = parent_dn.getText() if parent_dn else ""
-        
-        # Ensure parent exists
-        parent_entry = created_entries.get(parent_dn_str, root)
-        if parent_entry is None:
-            parent_entry = self._create_intermediate_entry(parent_dn_str, created_entries, root)
-        
-        # Create this intermediate entry with minimal attributes
-        rdn_components = list(dn.split())
-        rdn = rdn_components[0].getText() if rdn_components else ""
+        # Create the parent entry
+        rdn = parent_components[0].getText()
         rdn_attr = rdn.split("=")[0] if "=" in rdn else "cn"
         rdn_value = rdn.split("=")[1] if "=" in rdn else rdn
         
@@ -160,7 +180,7 @@ class JSONStorage:
             rdn_attr: [rdn_value]
         }
         
-        # Add appropriate object classes based on attribute type
+        # Add appropriate object classes
         if rdn_attr == "dc":
             attrs["objectClass"].append("domain")
         elif rdn_attr == "ou":
@@ -168,9 +188,11 @@ class JSONStorage:
         elif rdn_attr == "cn":
             attrs["objectClass"].append("organizationalRole")
         
-        entry = parent_entry.addChild(rdn, attrs)
-        created_entries[dn_str] = entry
-        return entry
+        parent_entry = grandparent_entry.addChild(rdn, attrs)
+        created_entries[parent_dn_str] = parent_entry
+        logging.debug(f"Created intermediate entry: {parent_dn_str}")
+        
+        return parent_entry
 
     def _start_file_watcher(self):
         """Start file system watcher for hot reload."""

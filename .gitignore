@@ -1,3 +1,7 @@
+# Things to ignore in general, as in nunya bizness
+scratch/
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

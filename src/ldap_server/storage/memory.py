@@ -15,18 +15,68 @@ class MemoryStorage:
     In-memory LDAP directory storage using LDIFTreeEntry.
     """
     
-    def __init__(self, base_dn: str = "dc=example,dc=com"):
+    def __init__(self, data: Dict[str, Any] = None, base_dn: str = "dc=example,dc=com"):
         """
         Initialize the in-memory storage with a base DN.
         
         Args:
+            data: Optional dict of DN -> attributes for test data
             base_dn: The base distinguished name for the directory tree
         """
         self.base_dn = base_dn
         self._temp_dir = tempfile.mkdtemp(prefix="ldap_server_")
         self.root = LDIFTreeEntry(self._temp_dir)
-        self._initialize_sample_data()
+        
+        if data is not None:
+            self._initialize_from_data(data)
+        else:
+            self._initialize_sample_data()
     
+    def _initialize_from_data(self, data: Dict[str, Any]) -> None:
+        """Initialize the directory with provided test data."""
+        from ldaptor.protocols.ldap.distinguishedname import DistinguishedName
+        
+        try:
+            # For test data, create entries in hierarchical order
+            # First create base entries manually
+            
+            # Create dc=com 
+            dc_com = self.root.addChild("dc=com", {
+                "objectClass": ["dcObject"],
+                "dc": ["com"]
+            })
+            
+            # Create dc=example,dc=com
+            dc_example = dc_com.addChild("dc=example", {
+                "objectClass": ["dcObject", "organization"],
+                "dc": ["example"],
+                "o": ["Example Organization"]
+            })
+            
+            # Create ou=people,dc=example,dc=com if in data
+            people_ou = None
+            if any("ou=people" in dn for dn in data.keys()):
+                people_ou = dc_example.addChild("ou=people", {
+                    "objectClass": ["organizationalUnit"],
+                    "ou": ["people"]
+                })
+            
+            # Add user entries
+            for dn_str, attributes in data.items():
+                if "uid=" in dn_str and "ou=people" in dn_str:
+                    # Extract uid value
+                    dn = DistinguishedName(dn_str)
+                    uid_component = list(dn.split())[0]  # First component is uid=...
+                    uid_rdn = uid_component.getText()  # Gets "uid=admin"
+                    
+                    if people_ou:
+                        user_entry = people_ou.addChild(uid_rdn, attributes)
+                        
+        except Exception as e:
+            print(f"Error initializing from data: {e}")
+            import traceback
+            traceback.print_exc()
+
     def _initialize_sample_data(self) -> None:
         """Initialize the directory with sample data using a more straightforward approach."""
         try:
