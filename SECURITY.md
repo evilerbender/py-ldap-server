@@ -17,7 +17,143 @@ The py-ldap-server implements secure password storage using industry-standard bc
 2. **{SSHA}** - Legacy Salted SHA-1 support (deprecated but functional)
 3. **Plain text** - For backwards compatibility (not recommended)
 
-## 🔧 Password Management Tools
+## �️ SystemD Security Hardening
+
+Many security concerns can be effectively mitigated using native systemd capabilities rather than application-level changes. This approach provides robust, OS-level security controls that are well-tested and maintained.
+
+### Recommended SystemD Unit Settings
+
+Create a secure systemd service unit for py-ldap-server with the following security settings:
+
+```ini
+[Unit]
+Description=Python LDAP Server
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=ldap-server
+Group=ldap-server
+ExecStart=/usr/local/bin/py-ldap-server --json /etc/ldap-server/data.json
+Restart=always
+RestartSec=10
+
+# === SECURITY HARDENING ===
+
+# Process isolation
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectHostname=yes
+ProtectClock=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+
+# Network security
+IPAddressDeny=any
+IPAddressAllow=localhost
+IPAddressAllow=10.0.0.0/8
+IPAddressAllow=172.16.0.0/12
+IPAddressAllow=192.168.0.0/16
+# Adjust IP ranges as needed for your environment
+
+# Filesystem access control
+ReadWritePaths=/var/lib/ldap-server
+ReadOnlyPaths=/etc/ldap-server
+# Deny access to sensitive directories
+InaccessiblePaths=/proc/sys
+InaccessiblePaths=/sys
+InaccessiblePaths=/dev
+
+# Capability restrictions
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+# Only needed if binding to port < 1024
+
+# Resource limits (prevents DoS via resource exhaustion)
+LimitNOFILE=1024
+LimitNPROC=64
+LimitCPU=300
+LimitAS=512M
+
+# Memory protection
+MemoryDenyWriteExecute=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+
+# System call filtering
+SystemCallFilter=@system-service
+SystemCallFilter=~@debug @mount @cpu-emulation @obsolete
+SystemCallErrorNumber=EPERM
+
+# Namespace isolation
+PrivateNetwork=no  # Set to 'yes' if using socket activation
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
+```
+
+### Security Benefits of SystemD Hardening
+
+| Security Concern | SystemD Mitigation | Benefit |
+|------------------|-------------------|---------|
+| **Rate Limiting** | `LimitNOFILE`, `LimitNPROC`, `LimitCPU` | Prevents resource exhaustion DoS attacks |
+| **File System Access** | `ProtectSystem`, `ReadWritePaths`, `ReadOnlyPaths` | Limits file system access to necessary paths only |
+| **Network Security** | `IPAddressDeny`, `IPAddressAllow` | Restricts network access to allowed IP ranges |
+| **Privilege Escalation** | `NoNewPrivileges`, `CapabilityBoundingSet` | Prevents privilege escalation attacks |
+| **Memory Attacks** | `MemoryDenyWriteExecute`, `LockPersonality` | Mitigates memory-based exploits |
+| **System Call Abuse** | `SystemCallFilter` | Restricts to safe system calls only |
+| **Directory Traversal** | `ProtectHome`, `InaccessiblePaths` | Prevents access to sensitive directories |
+| **Temporary File Attacks** | `PrivateTmp` | Isolates temporary files |
+
+### Installation and Setup
+
+1. **Create dedicated user and group:**
+```bash
+sudo useradd --system --home-dir /var/lib/ldap-server --create-home ldap-server
+sudo usermod -s /usr/sbin/nologin ldap-server
+```
+
+2. **Set up directory structure:**
+```bash
+sudo mkdir -p /etc/ldap-server /var/lib/ldap-server
+sudo chown ldap-server:ldap-server /var/lib/ldap-server
+sudo chmod 750 /var/lib/ldap-server
+sudo chmod 755 /etc/ldap-server
+```
+
+3. **Install the service:**
+```bash
+sudo cp py-ldap-server.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable py-ldap-server
+sudo systemctl start py-ldap-server
+```
+
+4. **Verify security settings:**
+```bash
+# Check service status
+sudo systemctl status py-ldap-server
+
+# Verify security restrictions are active
+sudo systemd-analyze security py-ldap-server
+```
+
+### Additional Security Considerations
+
+- **TLS/SSL**: Use a reverse proxy (nginx/Apache) with TLS termination
+- **Firewall**: Configure iptables/ufw to restrict access
+- **Monitoring**: Use journald for centralized logging
+- **Updates**: Keep system and dependencies updated
+
+## �🔧 Password Management Tools
 
 ### Upgrade Existing Data
 

@@ -87,6 +87,19 @@ uv run python scripts/upgrade_passwords.py data.json
 # - Preserve existing hashed passwords
 ```
 
+### SystemD Security Hardening
+For production deployments, security concerns like rate limiting, resource exhaustion, filesystem access control, and network restrictions are handled through native systemd capabilities rather than application code.
+
+See [SystemD Deployment Guide](docs/SYSTEMD_DEPLOYMENT.md) for:
+- 🛡️ **Comprehensive security hardening** using systemd unit settings
+- 🔒 **Process isolation** and privilege restrictions  
+- 🌐 **Network access controls** and IP allow-listing
+- 📁 **Filesystem access restrictions** and read-only configurations
+- ⚡ **Resource limits** to prevent DoS attacks
+- 🔍 **Security verification** and monitoring tools
+
+This approach provides enterprise-grade security without requiring application-level changes.
+
 For more details, see [SECURITY.md](SECURITY.md).
 
 ## Development
