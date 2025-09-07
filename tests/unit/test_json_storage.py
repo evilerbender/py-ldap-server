@@ -32,7 +32,10 @@ class TestJSONStorage:
                 json.dump(simple_data, f)
             
             # Test initialization
-            storage = JSONStorage(json_path, hash_plain_passwords=False, enable_watcher=False)
+            try:
+                storage = JSONStorage(json_path, hash_plain_passwords=False, enable_watcher=False)
+            except ImportError:
+                pytest.skip("watchdog dependency not available")
             
             try:
                 # Basic checks

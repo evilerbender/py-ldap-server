@@ -128,7 +128,7 @@ class LDAPServerFactory(ServerFactory):
             storage = MemoryStorage()
         
         self.storage = storage
-        self.root = storage.root
+        self.root = storage.get_root()
         
         # Register adapter only once globally
         if not LDAPServerFactory._adapter_registered:
