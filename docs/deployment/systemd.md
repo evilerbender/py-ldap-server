@@ -6,11 +6,10 @@ This guide shows how to deploy py-ldap-server as a secure systemd service with c
 
 The deployment uses native systemd security capabilities to provide enterprise-grade security without requiring application-level changes.
 
-## Prerequisites
+## 📋 **Prerequisites**
 
-- Linux system with systemd
-- Python 3.8+ installed
-- sudo/root access for service installation
+- Ubuntu/Debian 20.04+ or CentOS/RHEL 8+ (systemd-based distribution)
+- Python 3.12+ installed
 
 ## Installation Steps
 
