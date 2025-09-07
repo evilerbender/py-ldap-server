@@ -42,6 +42,10 @@ class MockStorage:
         self.data = data or {}
         self.root = MockRoot()  # Satisfy LDAPServerFactory requirements
     
+    def get_root(self) -> MockRoot:
+        """Get the root entry for the storage backend."""
+        return self.root
+    
     def find_entry(self, dn: str) -> Optional[MockLDAPEntry]:
         """Find entry by DN."""
         normalized_dn = dn.lower().strip()
