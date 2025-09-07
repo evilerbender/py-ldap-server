@@ -1,233 +1,106 @@
-# Examples & Tutorials
+# Configuration Examples
 
-This section provides practical examples, code samples, and step-by-step tutorials for using py-ldap-server in various scenarios.
+This directory contains example JSON configuration files for the py-ldap-server unified JSON storage backend.
 
-## 📚 **Available Examples**
+## Single File Configuration
 
-### 🚀 **Basic Usage**
-- **[📖 Basic Server Usage](basic-usage.md)** - Simple server setup and operation
-- **[🔧 Configuration Examples](configuration/)** - Sample configuration files
-- **[👤 User Management](basic-usage.md#user-management)** - Managing users and passwords
+### basic.json
+A complete directory structure in a single file suitable for simple deployments.
 
-### 🔌 **Client Integration**
-- **[🌐 LDAP Client Examples](client-examples.md)** - Connecting various LDAP clients
-- **[🔑 Authentication Examples](client-examples.md#authentication)** - Client authentication patterns
-- **[🔍 Search Examples](client-examples.md#search)** - LDAP search operations
-
-### ⚙️ **Configuration Templates**
-- **[📄 Basic Configuration](configuration/basic.json)** - Simple server setup
-- **[🔐 Secure Configuration](configuration/secure.json)** - Production security setup
-- **[📊 Monitoring Configuration](configuration/monitoring.json)** - Operational monitoring
-
-## 🎯 **Example Categories**
-
-### 👶 **Beginner Examples**
-Perfect for getting started:
 ```bash
-# Start basic server
-py-ldap-server --port 1389
-
-# Test with ldapsearch
-ldapsearch -x -H ldap://localhost:1389 -b "dc=example,dc=com"
+# Start server with single file
+uv run py-ldap-server --json docs/examples/configuration/basic.json
 ```
 
-### 👨‍💼 **Administrator Examples**
-Production deployment scenarios:
-- SystemD service configuration
-- Security hardening setup
-- Backup and monitoring configuration
+## Federated Multi-File Configuration
 
-### 👨‍💻 **Developer Examples**
-Code integration and customization:
-- Custom storage backend implementation
-- Authentication handler extension
-- Client library integration
+The unified JSON storage backend supports federation across multiple files, allowing you to organize your directory data for easier management.
 
-## 📋 **Tutorial Series**
+### federated_users.json
+Contains domain root and user account entries.
 
-### 📖 **Tutorial 1: Quick Start**
-Get py-ldap-server running in 5 minutes:
-1. Installation and setup
-2. Basic configuration
-3. First LDAP query
-4. User authentication
+### federated_groups.json  
+Contains group organizational units and group entries.
 
-### 🔧 **Tutorial 2: Configuration**
-Complete server configuration:
-1. Storage backend selection
-2. Authentication setup
-3. Security configuration
-4. Performance tuning
-
-### 🚀 **Tutorial 3: Production Deployment**
-Deploy to production environment:
-1. SystemD service setup
-2. Security hardening
-3. Monitoring configuration
-4. Backup procedures
-
-### 🔌 **Tutorial 4: Client Integration**
-Integrate with common applications:
-1. Apache/Nginx authentication
-2. PAM configuration
-3. Application development
-4. Troubleshooting
-
-## 💡 **Common Use Cases**
-
-### 🏢 **Enterprise Directory**
-Setting up py-ldap-server as a company directory:
-- User and group management
-- Application authentication
-- System integration (PAM/SSSD)
-- Security policies
-
-### 🧪 **Development & Testing**
-Using py-ldap-server for development:
-- Local LDAP server for testing
-- Mock directory data
-- Integration testing
-- CI/CD pipeline integration
-
-### 🔬 **Learning LDAP**
-Educational use of py-ldap-server:
-- Understanding LDAP concepts
-- Experimenting with LDAP operations
-- Learning directory services
-- Protocol analysis
-
-## 🛠️ **Code Examples**
-
-### Python Client Example
-```python
-import ldap3
-
-# Connect to py-ldap-server
-server = ldap3.Server('ldap://localhost:1389')
-conn = ldap3.Connection(server, auto_bind=True)
-
-# Search for users
-conn.search('dc=example,dc=com', '(objectClass=person)')
-for entry in conn.entries:
-    print(f"User: {entry.cn}")
-```
-
-### Shell Script Example
 ```bash
-#!/bin/bash
-# Test LDAP authentication
-
-LDAP_SERVER="ldap://localhost:1389"
-BASE_DN="dc=example,dc=com"
-
-# Search for all users
-ldapsearch -x -H "$LDAP_SERVER" -b "$BASE_DN" "(objectClass=person)" cn mail
-
-# Test authentication
-ldapsearch -x -H "$LDAP_SERVER" -b "$BASE_DN" \
-    -D "cn=admin,dc=example,dc=com" -W "(cn=*)"
+# Start server with federated configuration
+uv run py-ldap-server --json docs/examples/configuration/federated_users.json docs/examples/configuration/federated_groups.json
 ```
 
-### Configuration File Example
+## Read-Only Mode
+
+For externally managed configurations, you can run the server in read-only mode:
+
+```bash
+# Read-only mode prevents any write operations
+uv run py-ldap-server --json /etc/ldap/readonly_config.json --read-only
+```
+
+## Configuration Features
+
+- **Automatic password hashing**: Plain text passwords are automatically upgraded to bcrypt
+- **Hot reload**: File changes are automatically detected and reloaded
+- **Atomic writes**: All modifications are atomic with file locking
+- **Automatic backups**: Created before password upgrades and modifications
+- **Federation**: Multiple files are merged into a single directory tree
+- **Read-only support**: Prevents modifications when consuming external configs
+
+## File Format
+
+All JSON files follow the same structure:
+
 ```json
 {
-  "server": {
-    "port": 389,
-    "bind_host": "0.0.0.0",
-    "debug": false
-  },
-  "storage": {
-    "type": "json",
-    "file": "/etc/py-ldap-server/data.json"
-  },
-  "security": {
-    "password_rounds": 12,
-    "require_tls": false
-  }
+  "base_dn": "dc=example,dc=com",
+  "entries": [
+    {
+      "dn": "dc=example,dc=com",
+      "objectClass": ["dcObject", "organization"],
+      "dc": "example",
+      "o": "Example Organization"
+    }
+  ]
 }
 ```
 
-## 📊 **Example Data Sets**
+### Required Fields
 
-### 👥 **Sample Directory Data**
-Pre-built directory structures for testing:
-- **Small Company**: 10 users, 3 groups
-- **Medium Organization**: 100 users, 10 groups, multiple OUs
-- **Large Enterprise**: 1000+ users, complex hierarchy
+- `base_dn`: The base distinguished name for the directory
+- `entries`: Array of LDAP entry objects
+- `dn`: Distinguished name for each entry
+- `objectClass`: LDAP object classes (array)
 
-### 🔧 **Configuration Variants**
-Different configuration examples:
-- **Development**: Basic setup for local development
-- **Staging**: Production-like testing environment
-- **Production**: Secure enterprise deployment
+### Optional Fields
 
-## 🔍 **Troubleshooting Examples**
+- Any valid LDAP attributes as defined by the object classes
+- `userPassword`: Automatically hashed with bcrypt if in plain text
 
-### 🐛 **Common Issues**
-Real-world problems and solutions:
-- Authentication failures
-- Connection timeouts
-- Performance issues
-- Configuration errors
+## Example Usage
 
-### 🔧 **Debug Techniques**
-Debugging approaches with examples:
-- Log analysis
-- Network troubleshooting
-- Performance profiling
-- Security audit
+### Single File Mode
+```bash
+# Basic setup
+uv run py-ldap-server --json basic.json
 
-## 📚 **Reference Material**
+# With custom port
+uv run py-ldap-server --json basic.json --port 1389
+```
 
-### 📖 **LDAP Concepts**
-Quick reference for LDAP concepts:
-- Distinguished Names (DN)
-- Object Classes and Attributes
-- Search Filters and Scope
-- Bind Operations
+### Federation Mode
+```bash
+# Multiple files merged together
+uv run py-ldap-server --json federated_users.json federated_groups.json
 
-### 🔑 **Authentication Methods**
-Examples of different authentication approaches:
-- Anonymous bind
-- Simple bind
-- SASL authentication (future)
-- Certificate authentication (future)
+# Read-only federation
+uv run py-ldap-server --json federated_users.json federated_groups.json --read-only
+```
 
-## 🎓 **Learning Path**
+## Related Documentation
 
-### 📚 **Recommended Reading Order**
-1. **[📖 Basic Usage](basic-usage.md)** - Start here
-2. **[🔧 Configuration Examples](configuration/)** - Learn configuration
-3. **[🌐 Client Examples](client-examples.md)** - Client integration
-4. **[🚀 Deployment Guide](../deployment/README.md)** - Production deployment
-
-### 🎯 **Skill Levels**
-- **Beginner**: Basic server operation and simple queries
-- **Intermediate**: Configuration, authentication, and integration
-- **Advanced**: Custom extensions, performance tuning, security
-
-## 🤝 **Contributing Examples**
-
-Have a useful example? We welcome contributions:
-1. **Create Example**: Write clear, documented example
-2. **Test Example**: Ensure example works correctly
-3. **Submit PR**: Follow contribution guidelines
-4. **Update Index**: Add to this README
-
-## 🔗 **External Examples**
-
-### 🌐 **Community Examples**
-- **GitHub Repositories**: Community-contributed examples
-- **Blog Posts**: Tutorials and use cases
-- **Stack Overflow**: Q&A and solutions
-
-### 📖 **Official Documentation**
-- **[📚 User Guides](../guides/README.md)** - Comprehensive guides
-- **[🔧 API Documentation](../api/README.md)** - Technical reference
-- **[🚀 Deployment Docs](../deployment/README.md)** - Production deployment
+- **[� Quick Start Guide](../guides/quick-start.md)** - Get started quickly
+- **[⚙️ Configuration Guide](../guides/configuration.md)** - Detailed configuration
+- **[� JSON Storage API](../api/storage/json.md)** - Technical API reference
 
 ---
 
-**Examples Status**: Basic examples available (Phase 1)  
-**Coming Soon**: Advanced integration examples (Phase 2+)  
-**Last Updated**: September 7, 2025
+**Last Updated**: December 2024

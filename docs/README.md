@@ -26,7 +26,7 @@ docs/
 │   ├── storage/                # Storage backend documentation
 │   │   ├── README.md           # Storage systems overview
 │   │   ├── memory.md           # In-memory storage backend
-│   │   └── json.md             # JSON file storage backend
+│   │   └── json.md             # Unified JSON storage with federation support
 │   └── handlers/               # LDAP protocol handlers (future)
 │       └── README.md           # Protocol handlers overview
 ├── deployment/                 # Production deployment documentation
@@ -82,10 +82,15 @@ See **[📋 Project Phases](PROJECT_PHASES.md)** for detailed roadmap.
 
 ### ✅ **Implemented Features**
 - **LDAP Server**: Complete server using ldaptor/Twisted
-- **Storage Backends**: Memory and JSON file storage
+- **Storage Backends**: Memory and unified JSON storage with single-file and federated multi-file support
 - **Authentication**: Anonymous and simple bind authentication
 - **Security**: bcrypt password hashing and security hardening
-- **Testing**: 42 comprehensive unit tests
+- **Data Integrity**: Atomic writes, file locking, and automatic backups for JSON storage
+- **Federation Support**: Multiple JSON files merged into single directory tree
+- **Hot Reload**: File watching with automatic data reloading
+- **Read-Only Mode**: External configuration management support
+- **Concurrent Access**: Thread-safe operations with file locking protection
+- **Testing**: 72 comprehensive unit tests covering all functionality
 - **Deployment**: SystemD service configuration
 
 ### 🚧 **In Development (Phase 2)**

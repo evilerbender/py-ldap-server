@@ -102,6 +102,29 @@ py-ldap-server --storage json --storage-file /var/lib/ldap/company.json
 - **Password Upgrade**: Plain passwords automatically hashed
 - **Backup Creation**: Automatic backups before upgrades
 - **Error Handling**: Graceful handling of malformed files
+- **Atomic Write Operations**: Thread-safe data integrity with file locking
+- **Concurrent Access Protection**: Prevents data corruption from simultaneous writes
+- **Automatic Recovery**: Failed operations leave original data intact
+
+**Atomic Write Configuration:**
+```python
+# Atomic write operations are automatically enabled for all JSON storage
+# Default settings:
+# - Lock timeout: 5.0 seconds
+# - Backup creation: Enabled
+# - Thread-safe concurrent access protection
+
+# For federated JSON storage:
+py-ldap-server --storage json --storage-file users.json
+# Multiple JSON files supported with automatic data integrity
+```
+
+**Data Integrity Features:**
+- **File Locking**: Uses fcntl for cross-process protection
+- **Temporary Files**: Atomic rename operations for consistency
+- **Timestamped Backups**: Created before each write operation
+- **Rollback Protection**: Failed writes don't corrupt existing data
+- **Thread Safety**: Multiple concurrent operations safely handled
 
 ## 🔐 **Security Configuration**
 

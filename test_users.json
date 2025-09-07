@@ -1,0 +1,48 @@
+[
+  {
+    "dn": "dc=example,dc=com",
+    "attributes": {
+      "objectClass": ["top", "domain"],
+      "dc": ["example"]
+    }
+  },
+  {
+    "dn": "ou=people,dc=example,dc=com",
+    "attributes": {
+      "objectClass": ["organizationalUnit"],
+      "ou": ["people"]
+    }
+  },
+  {
+    "dn": "uid=john.doe,ou=people,dc=example,dc=com",
+    "attributes": {
+      "objectClass": ["inetOrgPerson", "posixAccount"],
+      "uid": ["john.doe"],
+      "cn": ["John Doe"],
+      "sn": ["Doe"],
+      "givenName": ["John"],
+      "mail": ["john.doe@example.com"],
+      "uidNumber": ["1001"],
+      "gidNumber": ["1001"],
+      "homeDirectory": ["/home/john.doe"],
+      "loginShell": ["/bin/bash"],
+      "userPassword": ["secret123"]
+    }
+  },
+  {
+    "dn": "uid=jane.smith,ou=people,dc=example,dc=com",
+    "attributes": {
+      "objectClass": ["inetOrgPerson", "posixAccount"],
+      "uid": ["jane.smith"],
+      "cn": ["Jane Smith"],
+      "sn": ["Smith"],
+      "givenName": ["Jane"],
+      "mail": ["jane.smith@example.com"],
+      "uidNumber": ["1002"],
+      "gidNumber": ["1002"],
+      "homeDirectory": ["/home/jane.smith"],
+      "loginShell": ["/bin/bash"],
+      "userPassword": ["password456"]
+    }
+  }
+]

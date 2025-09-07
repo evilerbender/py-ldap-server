@@ -18,37 +18,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - New BindHandler class for LDAP bind operations
   - Comprehensive password management with bcrypt security
   - Support for anonymous and simple bind authentication
-- **JSON Storage Backend**: 
-  - File-based storage with hot reload capabilities
-  - JSON configuration support with validation
+- **Unified JSON Storage Backend**: 
+  - **BREAKING**: Consolidated JSONStorage and FederatedJSONStorage into single unified implementation
+  - Single-file and multi-file federation support in one class
+  - Atomic write operations with file locking and backup support
+  - File watching with hot reload capabilities
+  - Read-only mode for externally managed configurations
+  - Thread-safe concurrent access protection
   - Enhanced error handling and graceful degradation
 - **Enhanced Testing Framework**: 
-  - Expanded from 6 to 42 comprehensive unit tests
+  - Expanded from 6 to 72 comprehensive unit tests
+  - New atomic write operation test suite (19 tests)
+  - New unified JSON storage test suite (18 tests)
   - New mock storage backend for isolated testing
   - Dedicated test suites for authentication and storage
 - **Developer Experience Improvements**:
   - VSCode integration with optimized settings
   - Enhanced type hints throughout codebase
   - Improved error handling and user feedback
+  - Warning-free test execution
 
 ### Changed
 - **Python Version Requirement**: Updated minimum from Python 3.8+ to Python 3.12+
 - **Project Configuration**: Modernized pyproject.toml with updated tool configurations
 - **Code Organization**: Better separation of concerns with new handler modules
 - **Documentation Structure**: Reorganized SystemD docs into deployment section
+- **Storage Architecture**: **BREAKING** - Unified JSON storage implementation replacing separate backends
 - **Version Bump**: 0.1.0 → 0.2.0 (minor version increment for significant additions)
 
 ### Improved
 - **Storage Interface**: Enhanced with consistent get_root() method pattern
 - **Error Handling**: More descriptive error messages and proper exception handling
 - **Code Quality**: Enhanced type annotations and documentation
-- **Test Coverage**: Significantly improved with 42 comprehensive unit tests
+- **Test Coverage**: Significantly improved with 72 comprehensive unit tests
+- **File Watcher**: Enhanced to handle temporary files gracefully without warnings
+- **Data Integrity**: Atomic write operations ensure data consistency
 
 ### Removed
 - **Obsolete Files**: Removed test_phase1.py (replaced by comprehensive unit tests)
+- **Redundant Code**: Eliminated separate JSON and Federated storage implementations
+- **Development Artifacts**: Cleaned up temporary files and development leftovers
+
+### Fixed
+- **File Watcher Warnings**: Resolved file system event warnings during atomic operations
+- **Test Suite**: All 72 tests pass without warnings
+- **Documentation**: Updated all references to reflect unified storage approach
 
 ### Technical Details
-- **39 files changed**: 7,982 insertions, 179 deletions
+- **Storage Consolidation**: Single JSONStorage class with 808 lines supporting all use cases
+- **Test Expansion**: From 42 to 72 comprehensive unit tests
+- **Atomic Operations**: Thread-safe writes with file locking and backup creation
+- **Hot Reload**: File watching with debounced change detection
 - **Architecture**: Enhanced modular design with clear separation of concerns
 - **Testing**: Full backward compatibility maintained for LDAP protocol
 - **Performance**: Python 3.12+ performance improvements and latest security patches

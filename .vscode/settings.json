@@ -1,15 +1,19 @@
 {
     "chat.todoListTool.enabled": true,
     "chat.tools.terminal.autoApprove": {
-        "rm": false,
-        "rmdir": false,
-        "del": false,
-        "kill": false,
+        "*": true,
+        "grep": true,
+        "rm": true,
+        "cp": true,
+        "mv": true,
+        "rmdir": true,
+        "del": true,
+        "kill": true,
         "curl": true,
-        "wget": false,
-        "eval": false,
+        "wget": true,
+        "eval": true,
         "chmod": true,
-        "chown": false,
+        "chown": true,
         "find": true,
         "sort": true,
         "uniq": true,
@@ -24,7 +28,10 @@
         "cd": true,
         "pwd": true,
         "uv": true,
+        "~/.local/bin/uv": true,
         "uvx": true,
+        "python": true,
+        "python3": true,
         "git status": true,
         "git add": true,
         "git commit": true,
@@ -32,6 +39,9 @@
         "git checkout": true,
         "git log": true,
         "git diff": true,
-        "git pull": true
+        "git pull": true,
+        "timeout": true,
+        "sleep": true,
+        "pkill": true
     }
 }

@@ -45,7 +45,7 @@
         "Administrator"
       ],
       "userPassword": [
-        "{BCRYPT}JDJiJDEyJG1Kb1RZQlhQQW9RWExua3BQMmJ5WS5BLkp5WE9JUDBYZFdWZ29WRmNLMWhNRzJidlBwYXFp"
+        "{BCRYPT}JDJiJDEyJFhEZE4uc3RqT2JzdUZhQ3hPbDB3eS5XcnlZM3JIUlJxMTg3cGRVcS5kd0FESHFNYzFOVW0y"
       ],
       "mail": [
         "admin@example.com"
@@ -56,29 +56,29 @@
     }
   },
   {
-    "dn": "cn=user1,ou=people,dc=example,dc=com",
+    "dn": "cn=alice,ou=people,dc=example,dc=com",
     "attributes": {
       "objectClass": [
         "person",
         "organizationalPerson"
       ],
       "cn": [
-        "user1"
+        "alice"
       ],
       "sn": [
-        "User"
+        "Smith"
       ],
       "givenName": [
-        "Test"
+        "Alice"
       ],
       "userPassword": [
-        "{BCRYPT}JDJiJDEyJDhhN2xEempkRlZXNFJXdldkWk5pUXVxNXlPbHhMdlBWNzZOQXNIVjNNMjM0WGRnNlVnL2pH"
+        "{BCRYPT}JDJiJDEyJG05RTBkLjdQLjhybWVlSXVNQm5FdmVzQ2kxUGk4VnJQcW9WV2VNcGo1MjAxelg0Rm1EU21l"
       ],
       "mail": [
-        "user1@example.com"
+        "alice@example.com"
       ],
       "description": [
-        "Standard user account"
+        "Regular user account"
       ]
     }
   }
