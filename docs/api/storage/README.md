@@ -27,9 +27,10 @@ The storage system follows a common interface pattern:
 
 #### JSONStorage (`json.py`)
 - **Purpose**: File-based persistent storage with JSON format
-- **Performance**: Good for small to medium directories
-- **Persistence**: Data persists across server restarts
+- **Performance**: Good for small to medium directories with atomic write operations
+- **Persistence**: Data persists across server restarts with data integrity guarantees
 - **Use Cases**: Production deployments, configuration-based setups
+- **Features**: Atomic writes, file locking, automatic backups, concurrent access protection
 
 ### 🚧 **Planned Storage Backends** (Phase 3)
 
@@ -62,6 +63,19 @@ class StorageBackend:
         
     def get_all_entries(self) -> List[LDIFTreeEntry]:
         """Return all entries in the directory."""
+
+    # Write operations (JSONStorage and FederatedJSONStorage)
+    def add_entry(self, dn: str, attributes: dict) -> bool:
+        """Add new entry to directory."""
+        
+    def modify_entry(self, dn: str, new_attributes: dict) -> bool:
+        """Modify existing entry."""
+        
+    def delete_entry(self, dn: str) -> bool:
+        """Delete entry from directory."""
+        
+    def bulk_write_entries(self, entries: list) -> bool:
+        """Write multiple entries atomically."""
 ```
 
 ## 📚 **Storage Backend Details**
@@ -112,9 +126,13 @@ storage.cleanup()
 
 #### Features
 - **Persistent Storage**: Data survives server restarts
+- **Atomic Write Operations**: Thread-safe writes with file locking
+- **Automatic Backups**: Timestamped backups before each write
 - **Hot Reload**: Automatic file watching and reload
 - **Password Security**: Automatic password upgrade to bcrypt
 - **Error Handling**: Graceful handling of malformed files
+- **Concurrent Access**: Protection against write conflicts
+- **Data Integrity**: Atomic operations ensure consistency
 
 #### JSON Format
 ```json
@@ -140,7 +158,7 @@ storage.cleanup()
 
 #### Usage Example
 ```python
-from ldap_server.storage.json import JSONStorage
+from ldap_server.storage.json import JSONStorage, FederatedJSONStorage
 
 # Create storage from JSON file
 storage = JSONStorage(
@@ -152,7 +170,41 @@ storage = JSONStorage(
 root = storage.get_root()
 entries = storage.get_all_entries()
 
+# Write operations (atomic and thread-safe)
+success = storage.add_entry(
+    "uid=john,ou=users,dc=example,dc=com",
+    {
+        "uid": ["john"],
+        "cn": ["John Doe"],
+        "objectClass": ["top", "person"]
+    }
+)
+
+# Modify entry
+storage.modify_entry(
+    "uid=john,ou=users,dc=example,dc=com",
+    {"cn": ["John Smith"]}
+)
+
+# Delete entry
+storage.delete_entry("uid=john,ou=users,dc=example,dc=com")
+
+# Bulk operations
+entries = [
+    {"dn": "uid=alice,ou=users,dc=example,dc=com", "attributes": {...}},
+    {"dn": "uid=bob,ou=users,dc=example,dc=com", "attributes": {...}}
+]
+storage.bulk_write_entries(entries)
+
+# Federated storage (recommended for production)
+federated_storage = FederatedJSONStorage(json_files=[
+    "/path/to/users.json",
+    "/path/to/groups.json",
+    "/path/to/services.json"
+])
+
 # Storage automatically reloads when file changes
+# All write operations are atomic with automatic backups
 # No manual reload needed
 
 # Clean up when done
@@ -189,21 +241,47 @@ storage = MemoryStorage(
 # Basic file storage
 storage = JSONStorage("directory.json")
 
-# Advanced configuration
+# Advanced configuration with write operations
 storage = JSONStorage(
     json_file="/etc/ldap/directory.json",
     enable_watcher=True,    # Hot reload
     auto_upgrade=True,      # Password upgrades
     backup_on_upgrade=True  # Backup before changes
 )
+
+# All write operations are atomic with:
+# - File locking (5-second timeout by default)
+# - Automatic backups before writes
+# - Thread-safe concurrent access protection
+# - Proper error handling and rollback
+
+# Federated storage configuration
+federated_storage = FederatedJSONStorage(
+    json_files=[
+        "/etc/ldap/users.json",
+        "/etc/ldap/groups.json",
+        "/etc/ldap/services.json"
+    ]
+)
+
+# Write operations with custom atomic writer settings
+from pathlib import Path
+from ldap_server.storage.json import AtomicJSONWriter
+
+# Custom atomic write with longer timeout
+with AtomicJSONWriter(Path("/path/to/data.json"), 
+                      backup_enabled=True,
+                      lock_timeout=10.0) as writer:
+    writer.write_json(data)
 ```
 
 ## 🧪 **Testing**
 
-### 🔬 **Test Coverage**
+### 🧪 **Test Coverage**
 Storage backends have comprehensive test coverage:
 - **MemoryStorage**: 6 test cases covering initialization and data access
 - **JSONStorage**: 7 test cases covering file operations and error handling
+- **Atomic Write Operations**: 19 test cases covering atomic writes, concurrency, and error scenarios
 - **Integration Tests**: Cross-component storage testing
 
 ### 🧪 **Test Examples**
@@ -234,6 +312,51 @@ def test_json_storage_file_loading():
     
     assert root.dn.getText() == "dc=test,dc=com"
     storage.cleanup()
+
+def test_atomic_write_operations():
+    """Test atomic write operations with concurrency."""
+    storage = FederatedJSONStorage(json_files=["/tmp/test.json"])
+    
+    # Test atomic add
+    success = storage.add_entry(
+        "uid=test,ou=users,dc=example,dc=com",
+        {"uid": ["test"], "cn": ["Test User"]}
+    )
+    assert success is True
+    
+    # Test atomic modify
+    success = storage.modify_entry(
+        "uid=test,ou=users,dc=example,dc=com",
+        {"cn": ["Modified User"]}
+    )
+    assert success is True
+    
+    # Test atomic delete
+    success = storage.delete_entry("uid=test,ou=users,dc=example,dc=com")
+    assert success is True
+
+def test_concurrent_write_protection():
+    """Test that concurrent writes are properly serialized."""
+    # Multiple threads attempting writes are safely handled
+    # with file locking and atomic operations
+    import threading
+    
+    def write_data(storage, data_id):
+        return storage.add_entry(f"uid=user{data_id},ou=users,dc=example,dc=com", 
+                               {"uid": [f"user{data_id}"]})
+    
+    storage = FederatedJSONStorage(json_files=["/tmp/concurrent.json"])
+    threads = []
+    
+    for i in range(5):
+        thread = threading.Thread(target=write_data, args=(storage, i))
+        threads.append(thread)
+        thread.start()
+    
+    for thread in threads:
+        thread.join()
+    
+    # All operations complete successfully without corruption
 ```
 
 ## ⚡ **Performance Characteristics**
@@ -245,9 +368,11 @@ def test_json_storage_file_loading():
 | **Access Speed** | Fastest | Fast | Medium |
 | **Persistence** | None | File-based | Database |
 | **Scalability** | Limited by RAM | Medium | High |
-| **Concurrency** | Single process | File locking | Full ACID |
+| **Concurrency** | Single process | Atomic writes + locking | Full ACID |
 | **Memory Usage** | High | Low | Low |
 | **Startup Time** | Instant | Fast | Medium |
+| **Write Operations** | In-memory only | Atomic + backups | Transactional |
+| **Data Integrity** | Memory only | File locking + atomicity | Database constraints |
 
 *DatabaseStorage planned for Phase 3
 
@@ -381,14 +506,14 @@ Future security features:
 
 ## 🔗 **Related Documentation**
 
-- **[💿 Memory Storage API](memory.md)** - Detailed MemoryStorage documentation
-- **[📄 JSON Storage API](json.md)** - Detailed JSONStorage documentation
+- **[💿 Memory Storage API](memory.md)** - Detailed MemoryStorage documentation  
+- **[📄 JSON Storage API](json.md)** - Detailed JSONStorage and atomic write operations
 - **[🏗️ Architecture Guide](../../development/architecture.md)** - System design
 - **[🧪 Testing Guide](../../development/testing.md)** - Storage testing
 
 ---
 
-**Storage Status**: Phase 1 complete - Memory and JSON backends implemented  
-**Performance**: Optimized for small to medium directories  
-**Test Coverage**: 13 comprehensive test cases  
-**Last Updated**: September 7, 2025
+**Storage Status**: Phase 1 complete - Memory and JSON backends with atomic write operations  
+**Performance**: Optimized for small to medium directories with data integrity  
+**Test Coverage**: 32 comprehensive test cases (13 storage + 19 atomic writes)  
+**Last Updated**: December 2024

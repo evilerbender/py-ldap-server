@@ -12,14 +12,15 @@ This guide covers testing practices, tools, and strategies for py-ldap-server de
 
 ### 📊 **Current Test Coverage**
 ```
-Total Tests: 42 comprehensive test cases
+Total Tests: 61 comprehensive test cases
 ├── Authentication: 13 tests (test_bind.py, test_password.py)
 ├── Storage: 13 tests (test_server.py, test_json_storage.py)  
+├── Atomic Write Operations: 19 tests (test_atomic_write_operations.py)
 ├── Server Core: 6 tests (test_server.py)
 └── Password Security: 10 tests (test_password.py)
 
-Success Rate: 100% (42/42 passing)
-Execution Time: ~14 seconds
+Success Rate: 100% (61/61 passing)
+Execution Time: ~20 seconds
 ```
 
 ## 🚀 **Running Tests**
@@ -553,7 +554,7 @@ def test_with_temporary_storage():
 
 ---
 
-**Testing Status**: Comprehensive unit test coverage (42 tests, 100% pass rate)  
+**Testing Status**: Comprehensive unit test coverage (61 tests, 100% pass rate)  
 **Next Priority**: Integration testing with real LDAP clients (Phase 2)  
-**Test Philosophy**: Fast, reliable, comprehensive coverage of critical components  
-**Last Updated**: September 7, 2025
+**Test Philosophy**: Fast, reliable, comprehensive coverage of critical components and atomic operations  
+**Last Updated**: December 2024

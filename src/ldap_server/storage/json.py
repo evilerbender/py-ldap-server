@@ -1,5 +1,5 @@
 """
-JSON-backed LDAP storage backend with hot reload support, federation capabilities, and lazy loading.
+JSON-backed LDAP storage backend with hot reload support, federation capabilities, lazy loading, and atomic write operations.
 """
 import json
 import logging
@@ -8,6 +8,8 @@ import os
 import shutil
 import time
 import weakref
+import fcntl
+import errno
 from pathlib import Path
 from typing import Dict, List, Any, Union, Optional, Set, Tuple, Iterator
 from collections import OrderedDict
@@ -19,6 +21,246 @@ from watchdog.events import FileSystemEventHandler
 import threading
 
 from ldap_server.auth.password import PasswordManager
+
+
+class AtomicJSONWriter:
+    """
+    Atomic JSON file writer that ensures data integrity during write operations.
+    
+    Uses temporary files and atomic rename operations to prevent data corruption
+    and provides concurrent access protection through file locking.
+    """
+    
+    def __init__(self, target_path: Path, backup_enabled: bool = True, lock_timeout: float = 10.0):
+        """
+        Initialize atomic JSON writer.
+        
+        Args:
+            target_path: Path to the target JSON file
+            backup_enabled: Whether to create backups before writing
+            lock_timeout: Maximum time to wait for file lock (seconds)
+        """
+        self.target_path = Path(target_path)
+        self.backup_enabled = backup_enabled
+        self.lock_timeout = lock_timeout
+        self._lock_file = None
+        self._temp_file = None
+        
+        # Ensure target directory exists
+        self.target_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    def __enter__(self):
+        """Context manager entry - acquire lock and prepare for writing."""
+        try:
+            self._acquire_lock()
+            
+            # Create backup if enabled and file exists
+            if self.backup_enabled and self.target_path.exists():
+                self._backup_path = self._create_backup()
+                
+            self._prepare_temp_file()
+            return self
+        except Exception:
+            self._cleanup()
+            raise
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit - commit or rollback and cleanup."""
+        try:
+            if exc_type is None:
+                self._commit_write()
+            else:
+                self._rollback_write()
+        finally:
+            self._cleanup()
+    
+    def _acquire_lock(self):
+        """Acquire exclusive lock on the target file."""
+        lock_path = self.target_path.with_suffix(self.target_path.suffix + '.lock')
+        
+        try:
+            self._lock_file = open(lock_path, 'w')
+            
+            # Try to acquire exclusive lock with timeout
+            start_time = time.time()
+            while True:
+                try:
+                    fcntl.flock(self._lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    break
+                except (IOError, OSError) as e:
+                    if e.errno not in (errno.EAGAIN, errno.EACCES):
+                        raise
+                    
+                    if time.time() - start_time > self.lock_timeout:
+                        raise TimeoutError(f"Could not acquire lock on {self.target_path} within {self.lock_timeout}s")
+                    
+                    time.sleep(0.1)
+            
+            # Write PID to lock file for debugging
+            self._lock_file.write(str(os.getpid()))
+            self._lock_file.flush()
+            
+            logging.debug(f"Acquired lock for {self.target_path}")
+            
+        except Exception as e:
+            if self._lock_file:
+                self._lock_file.close()
+                self._lock_file = None
+            raise RuntimeError(f"Failed to acquire lock for {self.target_path}: {e}")
+    
+    def _prepare_temp_file(self):
+        """Create temporary file for atomic writing."""
+        temp_dir = self.target_path.parent
+        temp_prefix = f".{self.target_path.name}.tmp."
+        
+        try:
+            # Create temporary file in same directory as target (for atomic rename)
+            self._temp_file = tempfile.NamedTemporaryFile(
+                mode='w',
+                encoding='utf-8',
+                dir=temp_dir,
+                prefix=temp_prefix,
+                suffix='.json',
+                delete=False
+            )
+            
+            logging.debug(f"Created temp file {self._temp_file.name} for {self.target_path}")
+        except (PermissionError, OSError) as e:
+            raise PermissionError(f"Cannot create temporary file in {temp_dir}: {e}")
+    
+    def write_json(self, data: List[Dict[str, Any]], indent: int = 2):
+        """
+        Write JSON data to temporary file.
+        
+        Args:
+            data: List of dictionary entries to write
+            indent: JSON indentation level
+        """
+        if not self._temp_file:
+            raise RuntimeError("AtomicJSONWriter not properly initialized")
+        
+        try:
+            # Write JSON data
+            json.dump(data, self._temp_file, indent=indent, ensure_ascii=False)
+            self._temp_file.flush()
+            os.fsync(self._temp_file.fileno())  # Force write to disk
+            
+            logging.debug(f"Wrote {len(data)} entries to temp file")
+            
+        except Exception as e:
+            raise RuntimeError(f"Failed to write JSON data: {e}")
+    
+    def _create_backup(self):
+        """Create backup of existing file before overwriting."""
+        if not self.backup_enabled or not self.target_path.exists():
+            return None
+        
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        backup_path = self.target_path.parent / f"{self.target_path.name}.{timestamp}.bak"
+        
+        try:
+            shutil.copy2(self.target_path, backup_path)
+            logging.debug(f"Created backup: {backup_path}")
+            return backup_path
+        except Exception as e:
+            logging.warning(f"Failed to create backup: {e}")
+            return None
+    
+    def _commit_write(self):
+        """Commit the write by atomically renaming temp file to target."""
+        if not self._temp_file:
+            return
+        
+        temp_path = Path(self._temp_file.name)
+        self._temp_file.close()
+        self._temp_file = None
+        
+        try:
+            # Atomic rename - this is the critical atomic operation
+            temp_path.rename(self.target_path)
+            
+            logging.info(f"Atomically wrote {self.target_path}")
+            
+            # Clean up old backup if we have one
+            if hasattr(self, '_backup_path') and self._backup_path and self.backup_enabled:
+                self._cleanup_old_backups()
+                
+        except Exception as e:
+            # Try to restore from backup if rename failed
+            if hasattr(self, '_backup_path') and self._backup_path and self._backup_path.exists():
+                try:
+                    self._backup_path.rename(self.target_path)
+                    logging.warning(f"Restored {self.target_path} from backup after failed write")
+                except Exception as restore_e:
+                    logging.error(f"Failed to restore from backup: {restore_e}")
+            
+            # Clean up temp file
+            if temp_path.exists():
+                temp_path.unlink()
+            
+            raise RuntimeError(f"Failed to commit atomic write: {e}")
+    
+    def _rollback_write(self):
+        """Rollback by cleaning up temporary file."""
+        if self._temp_file:
+            temp_path = Path(self._temp_file.name)
+            self._temp_file.close()
+            self._temp_file = None
+            
+            if temp_path.exists():
+                temp_path.unlink()
+                logging.debug(f"Rolled back temp file {temp_path}")
+    
+    def _cleanup_old_backups(self, keep_count: int = 5):
+        """Clean up old backup files, keeping only the most recent."""
+        if not self.backup_enabled:
+            return
+        
+        try:
+            backup_pattern = f"{self.target_path.name}.*.bak"
+            backup_files = list(self.target_path.parent.glob(backup_pattern))
+            
+            # Sort by modification time, newest first
+            backup_files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+            
+            # Remove old backups
+            for old_backup in backup_files[keep_count:]:
+                old_backup.unlink()
+                logging.debug(f"Cleaned up old backup: {old_backup}")
+                
+        except Exception as e:
+            logging.warning(f"Failed to clean up old backups: {e}")
+    
+    def _cleanup(self):
+        """Clean up resources (lock file, temp file)."""
+        # Clean up temporary file
+        if self._temp_file:
+            try:
+                temp_path = Path(self._temp_file.name)
+                self._temp_file.close()
+                if temp_path.exists():
+                    temp_path.unlink()
+            except Exception as e:
+                logging.warning(f"Failed to clean up temp file: {e}")
+            finally:
+                self._temp_file = None
+        
+        # Release lock
+        if self._lock_file:
+            try:
+                fcntl.flock(self._lock_file.fileno(), fcntl.LOCK_UN)
+                self._lock_file.close()
+                
+                # Remove lock file
+                lock_path = self.target_path.with_suffix(self.target_path.suffix + '.lock')
+                if lock_path.exists():
+                    lock_path.unlink()
+                    
+                logging.debug(f"Released lock for {self.target_path}")
+            except Exception as e:
+                logging.warning(f"Failed to release lock: {e}")
+            finally:
+                self._lock_file = None
 
 
 class LazyEntryReference:
@@ -1226,6 +1468,222 @@ class FederatedJSONStorage:
         
         return None
     
+    def add_entry(self, dn: str, attributes: Dict[str, List[str]], target_file: Optional[Union[str, Path]] = None) -> bool:
+        """
+        Add a new LDAP entry to the JSON storage.
+        
+        Args:
+            dn: Distinguished name of the new entry
+            attributes: Dictionary of attribute names to list of values
+            target_file: Specific JSON file to add to (default: first file)
+            
+        Returns:
+            True if entry was added successfully, False otherwise
+        """
+        if not dn:
+            raise ValueError("DN cannot be empty")
+        
+        # Determine target file
+        if target_file:
+            target_path = Path(target_file)
+            if target_path not in self.json_files:
+                raise ValueError(f"Target file {target_file} not in federation")
+        else:
+            target_path = self.json_files[0]  # Default to first file
+        
+        try:
+            # Load current data from target file
+            current_data = self._load_json_entries(str(target_path))
+            
+            # Check if entry already exists
+            for entry in current_data:
+                if entry.get('dn') == dn:
+                    raise ValueError(f"Entry with DN '{dn}' already exists")
+            
+            # Create new entry
+            new_entry = {
+                'dn': dn,
+                'attributes': attributes
+            }
+            
+            # Add to data
+            current_data.append(new_entry)
+            
+            # Write atomically
+            with AtomicJSONWriter(target_path) as writer:
+                writer.write_json(current_data)
+            
+            # Reload federation to reflect changes
+            self._load_json()
+            
+            logging.info(f"Added entry {dn} to {target_path}")
+            return True
+            
+        except Exception as e:
+            logging.error(f"Failed to add entry {dn}: {e}")
+            return False
+    
+    def modify_entry(self, dn: str, modifications: Dict[str, List[str]], target_file: Optional[Union[str, Path]] = None) -> bool:
+        """
+        Modify an existing LDAP entry in JSON storage.
+        
+        Args:
+            dn: Distinguished name of the entry to modify
+            modifications: Dictionary of attribute modifications
+            target_file: Specific JSON file to modify (auto-detect if None)
+            
+        Returns:
+            True if entry was modified successfully, False otherwise
+        """
+        if not dn:
+            raise ValueError("DN cannot be empty")
+        
+        # Find the file containing this entry if not specified
+        if target_file:
+            target_path = Path(target_file)
+            if target_path not in self.json_files:
+                raise ValueError(f"Target file {target_file} not in federation")
+        else:
+            target_path = self._find_entry_file(dn)
+            if not target_path:
+                return False  # Entry not found - return False instead of raising
+        
+        try:
+            # Load current data from target file
+            current_data = self._load_json_entries(str(target_path))
+            
+            # Find and modify the entry
+            entry_found = False
+            for entry in current_data:
+                if entry.get('dn') == dn:
+                    # Apply modifications
+                    for attr_name, attr_values in modifications.items():
+                        entry['attributes'][attr_name] = attr_values
+                    entry_found = True
+                    break
+            
+            if not entry_found:
+                return False  # Entry not found in file - return False instead of raising
+            
+            # Write atomically
+            with AtomicJSONWriter(target_path) as writer:
+                writer.write_json(current_data)
+            
+            # Reload federation to reflect changes
+            self._load_json()
+            
+            logging.info(f"Modified entry {dn} in {target_path}")
+            return True
+            
+        except Exception as e:
+            logging.error(f"Failed to modify entry {dn}: {e}")
+            return False
+    
+    def delete_entry(self, dn: str, target_file: Optional[Union[str, Path]] = None) -> bool:
+        """
+        Delete an LDAP entry from JSON storage.
+        
+        Args:
+            dn: Distinguished name of the entry to delete
+            target_file: Specific JSON file to delete from (auto-detect if None)
+            
+        Returns:
+            True if entry was deleted successfully, False otherwise
+        """
+        if not dn:
+            raise ValueError("DN cannot be empty")
+        
+        # Find the file containing this entry if not specified
+        if target_file:
+            target_path = Path(target_file)
+            if target_path not in self.json_files:
+                raise ValueError(f"Target file {target_file} not in federation")
+        else:
+            target_path = self._find_entry_file(dn)
+            if not target_path:
+                return False  # Entry not found - return False instead of raising
+        
+        try:
+            # Load current data from target file
+            current_data = self._load_json_entries(str(target_path))
+            
+            # Find and remove the entry
+            original_count = len(current_data)
+            current_data = [entry for entry in current_data if entry.get('dn') != dn]
+            
+            if len(current_data) == original_count:
+                return False  # Entry not found in file - return False instead of raising
+            
+            # Write atomically
+            with AtomicJSONWriter(target_path) as writer:
+                writer.write_json(current_data)
+            
+            # Reload federation to reflect changes
+            self._load_json()
+            
+            logging.info(f"Deleted entry {dn} from {target_path}")
+            return True
+            
+        except Exception as e:
+            logging.error(f"Failed to delete entry {dn}: {e}")
+            return False
+    
+    def _find_entry_file(self, dn: str) -> Optional[Path]:
+        """Find which JSON file contains the specified DN."""
+        for json_file in self.json_files:
+            try:
+                entries = self._load_json_entries(str(json_file))
+                for entry in entries:
+                    if entry.get('dn') == dn:
+                        return json_file
+            except Exception as e:
+                logging.warning(f"Error searching for DN in {json_file}: {e}")
+                continue
+        return None
+    
+    def bulk_write_entries(self, entries: List[Dict[str, Any]], target_file: Union[str, Path]) -> bool:
+        """
+        Write multiple entries to a JSON file atomically.
+        
+        Args:
+            entries: List of entry dictionaries with 'dn' and 'attributes' keys
+            target_file: Path to the target JSON file
+            
+        Returns:
+            True if all entries were written successfully, False otherwise
+        """
+        target_path = Path(target_file)
+        
+        # Validate entries
+        for i, entry in enumerate(entries):
+            if not isinstance(entry, dict) or 'dn' not in entry or 'attributes' not in entry:
+                logging.warning(f"Invalid entry format at index {i}")
+                return False
+            
+            # Check for empty DN
+            if not entry['dn'] or not entry['dn'].strip():
+                logging.warning(f"Empty DN at index {i}")
+                return False
+        
+        try:
+            # Write atomically
+            with AtomicJSONWriter(target_path) as writer:
+                writer.write_json(entries)
+            
+            # Add to federation if not already present
+            if target_path not in self.json_files:
+                self.json_files.append(target_path)
+            
+            # Reload federation to reflect changes
+            self._load_json()
+            
+            logging.info(f"Bulk wrote {len(entries)} entries to {target_path}")
+            return True
+            
+        except Exception as e:
+            logging.error(f"Failed to bulk write entries to {target_file}: {e}")
+            return False
+
     def add_json_file(self, json_file: Union[str, Path]):
         """Add a new JSON file to the federation."""
         json_file = Path(json_file)
@@ -1360,6 +1818,23 @@ class JSONStorage:
         # Add legacy fields for backward compatibility
         stats['json_path'] = self.json_path
         return stats
+    
+    # Write operation methods (delegate to federated storage)
+    def add_entry(self, dn: str, attributes: Dict[str, List[str]]) -> bool:
+        """Add a new LDAP entry to the JSON storage."""
+        return self._federated.add_entry(dn, attributes, target_file=self.json_path)
+    
+    def modify_entry(self, dn: str, modifications: Dict[str, List[str]]) -> bool:
+        """Modify an existing LDAP entry in JSON storage."""
+        return self._federated.modify_entry(dn, modifications, target_file=self.json_path)
+    
+    def delete_entry(self, dn: str) -> bool:
+        """Delete an LDAP entry from JSON storage."""
+        return self._federated.delete_entry(dn, target_file=self.json_path)
+    
+    def bulk_write_entries(self, entries: List[Dict[str, Any]]) -> bool:
+        """Write multiple entries to the JSON file atomically."""
+        return self._federated.bulk_write_entries(entries, self.json_path)
 
     def cleanup(self) -> None:
         """Clean up temporary directory."""
