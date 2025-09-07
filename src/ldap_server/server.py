@@ -14,7 +14,7 @@ from twisted.application import service
 
 from ldap_server.factory import LDAPServerFactory
 from ldap_server.storage.memory import MemoryStorage
-from ldap_server.storage.json import JSONStorage
+from ldap_server.storage.json import JSONStorage, FederatedJSONStorage
 
 # Filter out known deprecation warnings from dependencies
 warnings.filterwarnings("ignore", "'crypt' is deprecated", DeprecationWarning, "passlib.*")
@@ -25,11 +25,17 @@ class LDAPServerService:
     """
     Main LDAP server service that manages the server lifecycle.
     """
-    def __init__(self, port: int = 1389, bind_host: str = "localhost", debug: bool = True, json_path: str = None):
+    def __init__(self, port: int = 1389, bind_host: str = "localhost", debug: bool = True, 
+                 json_path: str = None, json_files: list = None, merge_strategy: str = "last_wins",
+                 no_auto_reload: bool = False, debounce_time: float = 0.5):
         self.port = port
         self.bind_host = bind_host
         self.debug = debug
         self.json_path = json_path
+        self.json_files = json_files
+        self.merge_strategy = merge_strategy
+        self.enable_watcher = not no_auto_reload
+        self.debounce_time = debounce_time
         self.factory: Optional[LDAPServerFactory] = None
         self.listening_port = None
 
@@ -42,14 +48,37 @@ class LDAPServerService:
         log.msg(f"Starting LDAP server on {self.bind_host}:{self.port}")
 
         # Select storage backend
-        if self.json_path:
+        if self.json_files:
+            log.msg(f"Using federated JSON backend: {self.json_files}")
+            log.msg(f"Merge strategy: {self.merge_strategy}")
+            log.msg(f"Auto-reload: {self.enable_watcher}")
+            storage = FederatedJSONStorage(
+                json_files=self.json_files,
+                merge_strategy=self.merge_strategy,
+                enable_watcher=self.enable_watcher,
+                debounce_time=self.debounce_time
+            )
+        elif self.json_path:
             log.msg(f"Using JSON backend: {self.json_path}")
-            storage = JSONStorage(self.json_path)
+            log.msg(f"Auto-reload: {self.enable_watcher}")
+            storage = JSONStorage(
+                json_path=self.json_path,
+                enable_watcher=self.enable_watcher
+            )
         else:
+            log.msg("Using in-memory storage backend")
             storage = MemoryStorage()
 
         # Create server factory
         self.factory = LDAPServerFactory(storage=storage, debug=self.debug)
+
+        # Print storage statistics if available
+        if hasattr(storage, 'get_stats'):
+            stats = storage.get_stats()
+            log.msg(f"Storage stats: {stats.get('total_entries', 'N/A')} entries, "
+                   f"{stats.get('files_loaded', 'N/A')} files loaded")
+            if stats.get('merge_conflicts', 0) > 0:
+                log.msg(f"Warning: {stats['merge_conflicts']} merge conflicts resolved")
 
         # Start listening
         self.listening_port = reactor.listenTCP(self.port, self.factory, interface=self.bind_host)
@@ -92,10 +121,13 @@ def create_argument_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s                                    # Start on localhost:1389
+  %(prog)s                                    # Start with in-memory storage
+  %(prog)s --json data.json                  # Use single JSON file
+  %(prog)s --json-files data1.json data2.json data3.json  # Use federated JSON
+  %(prog)s --json-files users.json groups.json --merge-strategy first_wins
   %(prog)s --port 389 --bind-host 0.0.0.0   # Start on all interfaces, port 389
-  %(prog)s --json data.json                  # Use JSON backend with hot reload
   %(prog)s --no-debug                        # Start without debug logging
+  %(prog)s --no-auto-reload                  # Disable file watching
 
 Test the server:
   ldapsearch -x -H ldap://localhost:1389 -b "dc=example,dc=com" -s base
@@ -116,13 +148,45 @@ Test the server:
         help="Host address to bind to (default: localhost)"
     )
 
-    parser.add_argument(
+    # Storage backend options (mutually exclusive)
+    storage_group = parser.add_mutually_exclusive_group()
+    
+    storage_group.add_argument(
         "--json",
         type=str,
         default=None,
-        help="Path to JSON file for hot-reloading backend (optional)"
+        help="Path to JSON file for single-file backend (optional)"
+    )
+    
+    storage_group.add_argument(
+        "--json-files",
+        nargs="+",
+        metavar="FILE",
+        help="Paths to multiple JSON files for federated backend"
     )
 
+    # JSON storage configuration
+    parser.add_argument(
+        "--merge-strategy",
+        choices=["first_wins", "last_wins", "error"],
+        default="last_wins",
+        help="Merge strategy for federated JSON storage (default: last_wins)"
+    )
+    
+    parser.add_argument(
+        "--no-auto-reload",
+        action="store_true",
+        help="Disable automatic file watching and reloading"
+    )
+    
+    parser.add_argument(
+        "--debounce-time",
+        type=float,
+        default=0.5,
+        help="Debounce time for file change detection in seconds (default: 0.5)"
+    )
+
+    # Logging options
     parser.add_argument(
         "--debug", "-d",
         action="store_true",
@@ -140,7 +204,7 @@ Test the server:
     parser.add_argument(
         "--version", "-v",
         action="version",
-        version="py-ldap-server 0.1.0"
+        version="py-ldap-server 0.2.0"
     )
 
     return parser
@@ -156,7 +220,11 @@ def main():
             port=args.port,
             bind_host=args.bind_host,
             debug=args.debug,
-            json_path=args.json
+            json_path=args.json,
+            json_files=args.json_files,
+            merge_strategy=args.merge_strategy,
+            no_auto_reload=args.no_auto_reload,
+            debounce_time=args.debounce_time
         )
         server.start()
     except KeyboardInterrupt:

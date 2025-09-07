@@ -1,0 +1,36 @@
+[
+  {
+    "dn": "ou=groups,dc=example,dc=com",
+    "attributes": {
+      "objectClass": ["organizationalUnit"],
+      "ou": ["groups"]
+    }
+  },
+  {
+    "dn": "cn=admins,ou=groups,dc=example,dc=com",
+    "attributes": {
+      "objectClass": ["posixGroup"],
+      "cn": ["admins"],
+      "gidNumber": ["1000"],
+      "memberUid": ["john.doe"]
+    }
+  },
+  {
+    "dn": "cn=users,ou=groups,dc=example,dc=com",
+    "attributes": {
+      "objectClass": ["posixGroup"],
+      "cn": ["users"],
+      "gidNumber": ["1001"],
+      "memberUid": ["john.doe", "jane.smith"]
+    }
+  },
+  {
+    "dn": "cn=developers,ou=groups,dc=example,dc=com",
+    "attributes": {
+      "objectClass": ["posixGroup"],
+      "cn": ["developers"],
+      "gidNumber": ["1002"],
+      "memberUid": ["jane.smith"]
+    }
+  }
+]

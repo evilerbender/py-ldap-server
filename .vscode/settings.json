@@ -32,6 +32,9 @@
         "git checkout": true,
         "git log": true,
         "git diff": true,
-        "git pull": true
+        "git pull": true,
+        "timeout": true,
+        "sleep": true,
+        "pkill": true
     }
 }
