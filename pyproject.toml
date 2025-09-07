@@ -7,7 +7,7 @@ name = "py-ldap-server"
 version = "0.1.0"
 description = "A Python LDAP server implementation using Ldaptor"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.12"
 license = {text = "MIT"}
 authors = [
     {name = "evilerbender", email = "evilerbender@users.noreply.github.com"}
@@ -27,6 +27,7 @@ classifiers = [
 dependencies = [
     "ldaptor>=21.2.0",
     "twisted>=22.10.0",
+    "watchdog>=3.0.0",
 ]
 
 [project.optional-dependencies]
