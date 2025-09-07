@@ -14,7 +14,7 @@ from twisted.application import service
 
 from ldap_server.factory import LDAPServerFactory
 from ldap_server.storage.memory import MemoryStorage
-from ldap_server.storage.json import JSONStorage, FederatedJSONStorage
+from ldap_server.storage.json import JSONStorage
 
 # Filter out known deprecation warnings from dependencies
 warnings.filterwarnings("ignore", "'crypt' is deprecated", DeprecationWarning, "passlib.*")
@@ -52,18 +52,18 @@ class LDAPServerService:
             log.msg(f"Using federated JSON backend: {self.json_files}")
             log.msg(f"Merge strategy: {self.merge_strategy}")
             log.msg(f"Auto-reload: {self.enable_watcher}")
-            storage = FederatedJSONStorage(
+            storage = JSONStorage(
                 json_files=self.json_files,
                 merge_strategy=self.merge_strategy,
-                enable_watcher=self.enable_watcher,
+                enable_file_watching=self.enable_watcher,
                 debounce_time=self.debounce_time
             )
         elif self.json_path:
             log.msg(f"Using JSON backend: {self.json_path}")
             log.msg(f"Auto-reload: {self.enable_watcher}")
             storage = JSONStorage(
-                json_path=self.json_path,
-                enable_watcher=self.enable_watcher
+                json_files=self.json_path,
+                enable_file_watching=self.enable_watcher
             )
         else:
             log.msg("Using in-memory storage backend")

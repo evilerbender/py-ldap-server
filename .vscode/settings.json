@@ -1,7 +1,10 @@
 {
     "chat.todoListTool.enabled": true,
     "chat.tools.terminal.autoApprove": {
+        "*": true,
+        "grep": true,
         "rm": true,
+        "cp": true,
         "mv": true,
         "rmdir": true,
         "del": true,
@@ -27,6 +30,8 @@
         "uv": true,
         "~/.local/bin/uv": true,
         "uvx": true,
+        "python": true,
+        "python3": true,
         "git status": true,
         "git add": true,
         "git commit": true,

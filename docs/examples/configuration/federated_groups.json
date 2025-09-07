@@ -1,0 +1,31 @@
+{
+  "base_dn": "dc=example,dc=com",
+  "entries": [
+    {
+      "dn": "ou=groups,dc=example,dc=com",
+      "attributes": {
+        "objectClass": ["organizationalUnit"],
+        "ou": ["groups"],
+        "description": ["Container for group entries"]
+      }
+    },
+    {
+      "dn": "cn=admins,ou=groups,dc=example,dc=com",
+      "attributes": {
+        "objectClass": ["groupOfNames"],
+        "cn": ["admins"],
+        "description": ["Administrator group"],
+        "member": ["cn=admin,ou=people,dc=example,dc=com"]
+      }
+    },
+    {
+      "dn": "cn=users,ou=groups,dc=example,dc=com",
+      "attributes": {
+        "objectClass": ["groupOfNames"],
+        "cn": ["users"],
+        "description": ["Regular users group"],
+        "member": ["cn=alice,ou=people,dc=example,dc=com"]
+      }
+    }
+  ]
+}

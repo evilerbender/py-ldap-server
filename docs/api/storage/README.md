@@ -7,7 +7,7 @@ The storage system in py-ldap-server provides flexible data persistence for LDAP
 ```
 storage/
 ├── memory.py          # MemoryStorage - in-memory backend
-└── json.py           # JSONStorage - file-based backend
+└── json.py           # JSONStorage - unified file-based backend
 ```
 
 The storage system follows a common interface pattern:
@@ -26,11 +26,11 @@ The storage system follows a common interface pattern:
 - **Use Cases**: Development, testing, temporary directories
 
 #### JSONStorage (`json.py`)
-- **Purpose**: File-based persistent storage with JSON format
+- **Purpose**: Unified file-based persistent storage with JSON format supporting both single-file and federated multi-file configurations
 - **Performance**: Good for small to medium directories with atomic write operations
 - **Persistence**: Data persists across server restarts with data integrity guarantees
-- **Use Cases**: Production deployments, configuration-based setups
-- **Features**: Atomic writes, file locking, automatic backups, concurrent access protection
+- **Use Cases**: Production deployments, configuration-based setups, distributed configuration management
+- **Features**: Single/federated modes, atomic writes, file locking, automatic backups, concurrent access protection
 
 ### 🚧 **Planned Storage Backends** (Phase 3)
 
@@ -158,19 +158,35 @@ storage.cleanup()
 
 #### Usage Example
 ```python
-from ldap_server.storage.json import JSONStorage, FederatedJSONStorage
+from ldap_server.storage.json import JSONStorage
 
-# Create storage from JSON file
+# Single-file mode (traditional)
 storage = JSONStorage(
     json_file="/path/to/directory.json",
     enable_watcher=True  # Enable hot reload
+)
+
+# Multi-file federated mode
+storage = JSONStorage(
+    json_files=[
+        "/path/to/users.json",
+        "/path/to/groups.json", 
+        "/path/to/services.json"
+    ],
+    enable_watcher=True
+)
+
+# Read-only mode for externally managed configs
+storage = JSONStorage(
+    json_files=["/etc/ldap/readonly_config.json"],
+    read_only=True  # Prevents any write operations
 )
 
 # Access directory data
 root = storage.get_root()
 entries = storage.get_all_entries()
 
-# Write operations (atomic and thread-safe)
+# Write operations (atomic and thread-safe, not available in read-only mode)
 success = storage.add_entry(
     "uid=john,ou=users,dc=example,dc=com",
     {
@@ -195,17 +211,6 @@ entries = [
     {"dn": "uid=bob,ou=users,dc=example,dc=com", "attributes": {...}}
 ]
 storage.bulk_write_entries(entries)
-
-# Federated storage (recommended for production)
-federated_storage = FederatedJSONStorage(json_files=[
-    "/path/to/users.json",
-    "/path/to/groups.json",
-    "/path/to/services.json"
-])
-
-# Storage automatically reloads when file changes
-# All write operations are atomic with automatic backups
-# No manual reload needed
 
 # Clean up when done
 storage.cleanup()
@@ -238,30 +243,26 @@ storage = MemoryStorage(
 
 ### JSONStorage Configuration
 ```python
-# Basic file storage
+# Single-file storage (simple setups)
 storage = JSONStorage("directory.json")
 
-# Advanced configuration with write operations
+# Multi-file federated storage (recommended for production)
 storage = JSONStorage(
-    json_file="/etc/ldap/directory.json",
+    json_files=[
+        "/etc/ldap/users.json",
+        "/etc/ldap/groups.json",
+        "/etc/ldap/services.json"
+    ],
     enable_watcher=True,    # Hot reload
     auto_upgrade=True,      # Password upgrades
     backup_on_upgrade=True  # Backup before changes
 )
 
-# All write operations are atomic with:
-# - File locking (5-second timeout by default)
-# - Automatic backups before writes
-# - Thread-safe concurrent access protection
-# - Proper error handling and rollback
-
-# Federated storage configuration
-federated_storage = FederatedJSONStorage(
-    json_files=[
-        "/etc/ldap/users.json",
-        "/etc/ldap/groups.json",
-        "/etc/ldap/services.json"
-    ]
+# Read-only mode for externally managed configurations
+storage = JSONStorage(
+    json_files=["/etc/ldap/readonly_config.json"],
+    read_only=True,  # Prevents any write operations
+    enable_watcher=True  # Still monitors for external changes
 )
 
 # Write operations with custom atomic writer settings
@@ -315,7 +316,7 @@ def test_json_storage_file_loading():
 
 def test_atomic_write_operations():
     """Test atomic write operations with concurrency."""
-    storage = FederatedJSONStorage(json_files=["/tmp/test.json"])
+    storage = JSONStorage(json_files=["/tmp/test.json"])
     
     # Test atomic add
     success = storage.add_entry(
@@ -345,7 +346,7 @@ def test_concurrent_write_protection():
         return storage.add_entry(f"uid=user{data_id},ou=users,dc=example,dc=com", 
                                {"uid": [f"user{data_id}"]})
     
-    storage = FederatedJSONStorage(json_files=["/tmp/concurrent.json"])
+    storage = JSONStorage(json_files=["/tmp/concurrent.json"])
     threads = []
     
     for i in range(5):
