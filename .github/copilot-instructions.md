@@ -1,7 +1,16 @@
 # py-ldap-server - GitHub Copilot Instructions
 
 ## Project Overview
-This is a Python implementation of an LDAP (Lightweight Directory Access Protocol) server. The project is in early development stage.
+This is a Python implementation of an LDAP (Lightweight Directory Access Protocol) server. The project has completed Phase 1 (MVP) and has comprehensive documentation structure in place.
+
+## Current Status (v0.2.0)
+- ✅ **Phase 1 Complete**: Foundation & Basic Server (MVP)
+- ✅ **Comprehensive Documentation**: 26 documentation files across 6 categories
+- ✅ **Python 3.12+**: Modern Python requirements and tooling
+- ✅ **Enhanced Testing**: 42 unit tests with comprehensive coverage
+- ✅ **Authentication System**: Basic bind operations and password management
+- ✅ **Multiple Storage Backends**: In-memory and JSON file-based storage
+- 🚧 **Phase 2 Ready**: Core LDAP Operations development can begin
 
 ## 4-Phase Development Outline
 
@@ -109,8 +118,8 @@ This is a Python implementation of an LDAP (Lightweight Directory Access Protoco
 
 ### Stretch Goals
 - **Monitoring and Logging**: Integrate with monitoring tools and provide detailed logging
-- **Documentation**: Provide comprehensive documentation for developers and users
 - **REST API**: Optionally expose a REST API for directory operations
+- **Advanced Documentation**: Expand documentation with tutorials, troubleshooting guides, and performance optimization
 
 ### Recommended Project Structure
 ```
@@ -141,7 +150,34 @@ tests/
 ├── integration/
 └── fixtures/              # Test LDAP data (LDIF format)
 scripts/                   # Deployment and utility scripts
-docs/                      # Documentation
+docs/                      # Comprehensive documentation structure
+├── README.md              # Documentation overview and navigation
+├── guides/                # User-focused guides
+│   ├── README.md          # Guide navigation
+│   ├── quick-start.md     # Getting started quickly  
+│   ├── configuration.md   # Comprehensive configuration
+│   └── authentication.md  # Authentication setup
+├── api/                   # Technical API reference
+│   ├── README.md          # API documentation overview
+│   ├── server.md          # Main server component
+│   ├── factory.md         # LDAP server factory
+│   ├── handlers/          # Operation handlers
+│   ├── auth/              # Authentication modules
+│   └── storage/           # Storage backends
+├── deployment/            # Production deployment
+│   ├── README.md          # Deployment overview
+│   ├── systemd.md         # SystemD service setup
+│   └── security.md        # Security hardening
+├── development/           # Developer documentation
+│   ├── README.md          # Development overview
+│   ├── architecture.md    # System architecture
+│   ├── contributing.md    # Contribution guidelines
+│   ├── testing.md         # Testing strategies
+│   ├── roadmap.md         # Development roadmap
+│   └── PHASE*_TODOS.md    # Phase-specific tasks
+└── examples/              # Configuration examples
+    ├── README.md          # Examples overview
+    └── configuration/     # Sample configurations
 requirements.txt           # Dependencies (ldaptor, twisted)
 pyproject.toml             # Modern Python packaging
 ```
@@ -217,20 +253,34 @@ pyproject.toml             # Modern Python packaging
 
 ## Common Commands
 ```bash
-# Development setup
+# Development setup (recommended with uv)
+uv sync
+uv run py-ldap-server --help
+
+# Alternative setup with pip
 python3 -m venv venv
 source venv/bin/activate  # or venv\Scripts\activate on Windows
 pip install -e .[dev]
 
 # Testing
-pytest tests/ -v
-pytest tests/ --cov=src/ldap_server
+uv run pytest tests/ -v                    # Run all tests
+uv run pytest tests/ --cov=src/ldap_server # With coverage
+pytest tests/ -v                           # If using pip/venv
 
 # Run server
-py-ldap-server --port 1389 --bind-host localhost
+uv run py-ldap-server --port 1389 --bind-host localhost
+uv run py-ldap-server --json data.json     # With JSON backend
+py-ldap-server --port 1389 --bind-host localhost  # If using pip/venv
 
 # Test with ldapsearch
 ldapsearch -x -H ldap://localhost:1389 -b "dc=example,dc=com" -s base "(objectClass=*)"
+ldapsearch -x -H ldap://localhost:1389 -b "dc=example,dc=com" -s sub "(cn=*)"
+
+# Documentation access
+docs/README.md                             # Start here for documentation
+docs/guides/quick-start.md                 # Quick start guide
+docs/api/README.md                         # API documentation
+docs/development/README.md                 # Development guide
 ```
 
 When implementing new features, prioritize RFC compliance and compatibility with standard LDAP clients over custom extensions.
