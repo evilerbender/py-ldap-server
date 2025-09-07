@@ -9,6 +9,7 @@ from twisted.trial import unittest
 
 from ldap_server.factory import LDAPServerFactory, CustomLDAPServer
 from ldap_server.storage.memory import MemoryStorage
+from ldap_server.auth.password import PasswordManager
 
 
 class TestMemoryStorage(unittest.TestCase):

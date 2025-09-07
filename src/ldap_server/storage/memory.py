@@ -7,6 +7,8 @@ from ldaptor.ldiftree import LDIFTreeEntry
 import tempfile
 import os
 
+from ldap_server.auth.password import PasswordManager
+
 
 class MemoryStorage:
     """
@@ -66,7 +68,7 @@ class MemoryStorage:
             traceback.print_exc()
     
     def _add_sample_users(self, people_ou: LDIFTreeEntry) -> None:
-        """Add sample user entries."""
+        """Add sample user entries with securely hashed passwords."""
         users = [
             {
                 "dn": "uid=admin",
@@ -77,7 +79,7 @@ class MemoryStorage:
                     "sn": ["Administrator"],
                     "givenName": ["LDAP"],
                     "mail": ["admin@example.com"],
-                    "userPassword": ["admin123"],
+                    "userPassword": [PasswordManager.hash_password("admin123")],
                     "uidNumber": ["1000"],
                     "gidNumber": ["1000"],
                     "homeDirectory": ["/home/admin"],
@@ -93,7 +95,7 @@ class MemoryStorage:
                     "sn": ["User"],
                     "givenName": ["Test"],
                     "mail": ["testuser@example.com"],
-                    "userPassword": ["password123"],
+                    "userPassword": [PasswordManager.hash_password("password123")],
                     "uidNumber": ["1001"],
                     "gidNumber": ["1001"],
                     "homeDirectory": ["/home/testuser"],

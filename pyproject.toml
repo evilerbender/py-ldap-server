@@ -28,6 +28,7 @@ dependencies = [
     "ldaptor>=21.2.0",
     "twisted>=22.10.0",
     "watchdog>=3.0.0",
+    "bcrypt>=4.0.0",
 ]
 
 [project.optional-dependencies]
@@ -65,7 +66,7 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "--cov=src/ldap_server --cov-report=term-missing --cov-report=html"
+# addopts = "--cov=src/ldap_server --cov-report=term-missing --cov-report=html"
 filterwarnings = [
     "ignore:'crypt' is deprecated:DeprecationWarning:passlib.*",
     "ignore:DistinguishedName.__str__ method is deprecated:DeprecationWarning:.*",
@@ -76,3 +77,8 @@ python_version = "3.8"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+]

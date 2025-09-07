@@ -14,13 +14,16 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import threading
 
+from ldap_server.auth.password import PasswordManager
+
 
 class JSONStorage:
     """
     Storage backend that loads LDAP entries from a JSON file and supports hot reload.
     """
-    def __init__(self, json_path: str):
+    def __init__(self, json_path: str, hash_plain_passwords: bool = True):
         self.json_path = json_path
+        self.hash_plain_passwords = hash_plain_passwords
         self._temp_dir = tempfile.mkdtemp(prefix="ldap_json_")
         self.root_ref: Dict[str, LDIFTreeEntry] = {"root": None}
         self._load_json()
@@ -29,9 +32,45 @@ class JSONStorage:
     def _load_json(self):
         """Load JSON data and build LDAP tree using LDIFTreeEntry."""
         entries = self._load_json_entries(self.json_path)
+        
+        # Hash plain text passwords if enabled
+        if self.hash_plain_passwords:
+            entries = self._upgrade_passwords(entries)
+        
         root = self._build_ldif_tree(entries)
         self.root_ref["root"] = root
         logging.info(f"Loaded JSON LDAP entries from {self.json_path}")
+    
+    def _upgrade_passwords(self, entries: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Upgrade plain text passwords to secure hashes."""
+        upgraded_entries = []
+        
+        for entry in entries:
+            # Create a copy to avoid modifying original
+            updated_entry = entry.copy()
+            attributes = updated_entry.get("attributes", {}).copy()
+            
+            # Check for userPassword attribute
+            if "userPassword" in attributes:
+                passwords = attributes["userPassword"]
+                hashed_passwords = []
+                
+                for password in passwords:
+                    # Only hash if it's plain text (no format prefix)
+                    if not password.startswith("{"):
+                        hashed_password = PasswordManager.hash_password(password)
+                        hashed_passwords.append(hashed_password)
+                        logging.info(f"🔒 Upgraded password for {updated_entry.get('dn', 'unknown')}")
+                    else:
+                        # Keep existing hashed passwords
+                        hashed_passwords.append(password)
+                
+                attributes["userPassword"] = hashed_passwords
+                updated_entry["attributes"] = attributes
+            
+            upgraded_entries.append(updated_entry)
+        
+        return upgraded_entries
 
     @staticmethod
     def _load_json_entries(path: str) -> List[Dict[str, Any]]:

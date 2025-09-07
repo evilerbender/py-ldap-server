@@ -8,6 +8,8 @@ A Python implementation of an LDAP (Lightweight Directory Access Protocol) serve
 - Built on Twisted for async networking
 - Pluggable storage backends
 - Support for standard LDAP operations (bind, search, add, modify, delete)
+- **🔐 Secure password storage with bcrypt hashing**
+- **🛡️ Password upgrade tools for migrating from plain text**
 - TLS/LDAPS support
 - Compatible with standard LDAP clients
 
@@ -69,6 +71,23 @@ uv run py-ldap-server --port 389 --bind-host 0.0.0.0 --json data.json
 # Test anonymous bind and search
 ldapsearch -x -H ldap://localhost:1389 -b "dc=example,dc=com" -s base "(objectClass=*)"
 ```
+
+## 🔐 Security Features
+
+### Password Security
+The server implements secure password storage using bcrypt hashing. To upgrade existing plain text passwords:
+
+```bash
+# Upgrade passwords in your JSON data file
+uv run python scripts/upgrade_passwords.py data.json
+
+# This will:
+# - Create a backup of your original file
+# - Convert plain text passwords to secure bcrypt hashes
+# - Preserve existing hashed passwords
+```
+
+For more details, see [SECURITY.md](SECURITY.md).
 
 ## Development
 

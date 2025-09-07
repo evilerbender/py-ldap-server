@@ -2,220 +2,466 @@
   {
     "dn": "dc=example,dc=com",
     "attributes": {
-      "objectClass": ["top", "domain"],
-      "dc": ["example"]
+      "objectClass": [
+        "top",
+        "domain"
+      ],
+      "dc": [
+        "example"
+      ]
     }
   },
   {
     "dn": "ou=people,dc=example,dc=com",
     "attributes": {
-      "objectClass": ["organizationalUnit"],
-      "ou": ["people"]
+      "objectClass": [
+        "organizationalUnit"
+      ],
+      "ou": [
+        "people"
+      ]
     }
   },
   {
     "dn": "ou=groups,dc=example,dc=com",
     "attributes": {
-      "objectClass": ["organizationalUnit"],
-      "ou": ["groups"]
+      "objectClass": [
+        "organizationalUnit"
+      ],
+      "ou": [
+        "groups"
+      ]
     }
   },
   {
     "dn": "ou=servers,dc=example,dc=com",
     "attributes": {
-      "objectClass": ["organizationalUnit"],
-      "ou": ["servers"]
+      "objectClass": [
+        "organizationalUnit"
+      ],
+      "ou": [
+        "servers"
+      ]
     }
   },
   {
     "dn": "uid=admin,ou=people,dc=example,dc=com",
     "attributes": {
-      "objectClass": ["inetOrgPerson", "posixAccount", "shadowAccount"],
-      "uid": ["admin"],
-      "cn": ["LDAP Administrator"],
-      "sn": ["Administrator"],
-      "mail": ["admin@example.com"],
-      "uidNumber": ["1000"],
-      "gidNumber": ["1000"],
-      "homeDirectory": ["/home/admin"],
-      "loginShell": ["/bin/bash"],
-      "userPassword": ["admin123"]
+      "objectClass": [
+        "inetOrgPerson",
+        "posixAccount",
+        "shadowAccount"
+      ],
+      "uid": [
+        "admin"
+      ],
+      "cn": [
+        "LDAP Administrator"
+      ],
+      "sn": [
+        "Administrator"
+      ],
+      "mail": [
+        "admin@example.com"
+      ],
+      "uidNumber": [
+        "1000"
+      ],
+      "gidNumber": [
+        "1000"
+      ],
+      "homeDirectory": [
+        "/home/admin"
+      ],
+      "loginShell": [
+        "/bin/bash"
+      ],
+      "userPassword": [
+        "{BCRYPT}JDJiJDEyJEpBV29UeXdZclBVUHR1VDFqRGxEVWVSR0pmMFU0NnpkdDdpQ1RVTGdQTFh1dk9oTFdmNXd1"
+      ]
     }
   },
   {
     "dn": "uid=devops1,ou=people,dc=example,dc=com",
     "attributes": {
-      "objectClass": ["inetOrgPerson", "posixAccount"],
-      "uid": ["devops1"],
-      "cn": ["DevOps Engineer 1"],
-      "sn": ["Smith"],
-      "mail": ["devops1@example.com"],
-      "uidNumber": ["1001"],
-      "gidNumber": ["1001"],
-      "homeDirectory": ["/home/devops1"],
-      "loginShell": ["/bin/bash"],
-      "sshPublicKey": ["ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEArandomkey1"]
+      "objectClass": [
+        "inetOrgPerson",
+        "posixAccount"
+      ],
+      "uid": [
+        "devops1"
+      ],
+      "cn": [
+        "DevOps Engineer 1"
+      ],
+      "sn": [
+        "Smith"
+      ],
+      "mail": [
+        "devops1@example.com"
+      ],
+      "uidNumber": [
+        "1001"
+      ],
+      "gidNumber": [
+        "1001"
+      ],
+      "homeDirectory": [
+        "/home/devops1"
+      ],
+      "loginShell": [
+        "/bin/bash"
+      ],
+      "sshPublicKey": [
+        "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEArandomkey1"
+      ]
     }
   },
   {
     "dn": "uid=devops2,ou=people,dc=example,dc=com",
     "attributes": {
-      "objectClass": ["inetOrgPerson", "posixAccount"],
-      "uid": ["devops2"],
-      "cn": ["DevOps Engineer 2"],
-      "sn": ["Johnson"],
-      "mail": ["devops2@example.com"],
-      "uidNumber": ["1002"],
-      "gidNumber": ["1001"],
-      "homeDirectory": ["/home/devops2"],
-      "loginShell": ["/bin/bash"],
-      "sshPublicKey": ["ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEArandomkey2"]
+      "objectClass": [
+        "inetOrgPerson",
+        "posixAccount"
+      ],
+      "uid": [
+        "devops2"
+      ],
+      "cn": [
+        "DevOps Engineer 2"
+      ],
+      "sn": [
+        "Johnson"
+      ],
+      "mail": [
+        "devops2@example.com"
+      ],
+      "uidNumber": [
+        "1002"
+      ],
+      "gidNumber": [
+        "1001"
+      ],
+      "homeDirectory": [
+        "/home/devops2"
+      ],
+      "loginShell": [
+        "/bin/bash"
+      ],
+      "sshPublicKey": [
+        "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEArandomkey2"
+      ]
     }
   },
   {
     "dn": "uid=sre1,ou=people,dc=example,dc=com",
     "attributes": {
-      "objectClass": ["inetOrgPerson", "posixAccount"],
-      "uid": ["sre1"],
-      "cn": ["Site Reliability Engineer 1"],
-      "sn": ["Williams"],
-      "mail": ["sre1@example.com"],
-      "uidNumber": ["1003"],
-      "gidNumber": ["1002"],
-      "homeDirectory": ["/home/sre1"],
-      "loginShell": ["/bin/bash"]
+      "objectClass": [
+        "inetOrgPerson",
+        "posixAccount"
+      ],
+      "uid": [
+        "sre1"
+      ],
+      "cn": [
+        "Site Reliability Engineer 1"
+      ],
+      "sn": [
+        "Williams"
+      ],
+      "mail": [
+        "sre1@example.com"
+      ],
+      "uidNumber": [
+        "1003"
+      ],
+      "gidNumber": [
+        "1002"
+      ],
+      "homeDirectory": [
+        "/home/sre1"
+      ],
+      "loginShell": [
+        "/bin/bash"
+      ]
     }
   },
   {
     "dn": "uid=sre2,ou=people,dc=example,dc=com",
     "attributes": {
-      "objectClass": ["inetOrgPerson", "posixAccount"],
-      "uid": ["sre2"],
-      "cn": ["Site Reliability Engineer 2"],
-      "sn": ["Brown"],
-      "mail": ["sre2@example.com"],
-      "uidNumber": ["1004"],
-      "gidNumber": ["1002"],
-      "homeDirectory": ["/home/sre2"],
-      "loginShell": ["/bin/bash"]
+      "objectClass": [
+        "inetOrgPerson",
+        "posixAccount"
+      ],
+      "uid": [
+        "sre2"
+      ],
+      "cn": [
+        "Site Reliability Engineer 2"
+      ],
+      "sn": [
+        "Brown"
+      ],
+      "mail": [
+        "sre2@example.com"
+      ],
+      "uidNumber": [
+        "1004"
+      ],
+      "gidNumber": [
+        "1002"
+      ],
+      "homeDirectory": [
+        "/home/sre2"
+      ],
+      "loginShell": [
+        "/bin/bash"
+      ]
     }
   },
   {
     "dn": "uid=appuser1,ou=people,dc=example,dc=com",
     "attributes": {
-      "objectClass": ["inetOrgPerson", "posixAccount"],
-      "uid": ["appuser1"],
-      "cn": ["Application User 1"],
-      "sn": ["Davis"],
-      "mail": ["appuser1@example.com"],
-      "uidNumber": ["1005"],
-      "gidNumber": ["1003"],
-      "homeDirectory": ["/home/appuser1"],
-      "loginShell": ["/bin/bash"]
+      "objectClass": [
+        "inetOrgPerson",
+        "posixAccount"
+      ],
+      "uid": [
+        "appuser1"
+      ],
+      "cn": [
+        "Application User 1"
+      ],
+      "sn": [
+        "Davis"
+      ],
+      "mail": [
+        "appuser1@example.com"
+      ],
+      "uidNumber": [
+        "1005"
+      ],
+      "gidNumber": [
+        "1003"
+      ],
+      "homeDirectory": [
+        "/home/appuser1"
+      ],
+      "loginShell": [
+        "/bin/bash"
+      ]
     }
   },
   {
     "dn": "uid=dba1,ou=people,dc=example,dc=com",
     "attributes": {
-      "objectClass": ["inetOrgPerson", "posixAccount"],
-      "uid": ["dba1"],
-      "cn": ["Database Admin 1"],
-      "sn": ["Miller"],
-      "mail": ["dba1@example.com"],
-      "uidNumber": ["1006"],
-      "gidNumber": ["1004"],
-      "homeDirectory": ["/home/dba1"],
-      "loginShell": ["/bin/bash"]
+      "objectClass": [
+        "inetOrgPerson",
+        "posixAccount"
+      ],
+      "uid": [
+        "dba1"
+      ],
+      "cn": [
+        "Database Admin 1"
+      ],
+      "sn": [
+        "Miller"
+      ],
+      "mail": [
+        "dba1@example.com"
+      ],
+      "uidNumber": [
+        "1006"
+      ],
+      "gidNumber": [
+        "1004"
+      ],
+      "homeDirectory": [
+        "/home/dba1"
+      ],
+      "loginShell": [
+        "/bin/bash"
+      ]
     }
   },
   {
     "dn": "cn=admins,ou=groups,dc=example,dc=com",
     "attributes": {
-      "objectClass": ["posixGroup"],
-      "cn": ["admins"],
-      "gidNumber": ["1000"],
-      "memberUid": ["admin"]
+      "objectClass": [
+        "posixGroup"
+      ],
+      "cn": [
+        "admins"
+      ],
+      "gidNumber": [
+        "1000"
+      ],
+      "memberUid": [
+        "admin"
+      ]
     }
   },
   {
     "dn": "cn=devops,ou=groups,dc=example,dc=com",
     "attributes": {
-      "objectClass": ["posixGroup"],
-      "cn": ["devops"],
-      "gidNumber": ["1001"],
-      "memberUid": ["devops1", "devops2"]
+      "objectClass": [
+        "posixGroup"
+      ],
+      "cn": [
+        "devops"
+      ],
+      "gidNumber": [
+        "1001"
+      ],
+      "memberUid": [
+        "devops1",
+        "devops2"
+      ]
     }
   },
   {
     "dn": "cn=sre,ou=groups,dc=example,dc=com",
     "attributes": {
-      "objectClass": ["posixGroup"],
-      "cn": ["sre"],
-      "gidNumber": ["1002"],
-      "memberUid": ["sre1", "sre2"]
+      "objectClass": [
+        "posixGroup"
+      ],
+      "cn": [
+        "sre"
+      ],
+      "gidNumber": [
+        "1002"
+      ],
+      "memberUid": [
+        "sre1",
+        "sre2"
+      ]
     }
   },
   {
     "dn": "cn=appusers,ou=groups,dc=example,dc=com",
     "attributes": {
-      "objectClass": ["posixGroup"],
-      "cn": ["appusers"],
-      "gidNumber": ["1003"],
-      "memberUid": ["appuser1"]
+      "objectClass": [
+        "posixGroup"
+      ],
+      "cn": [
+        "appusers"
+      ],
+      "gidNumber": [
+        "1003"
+      ],
+      "memberUid": [
+        "appuser1"
+      ]
     }
   },
   {
     "dn": "cn=dbas,ou=groups,dc=example,dc=com",
     "attributes": {
-      "objectClass": ["posixGroup"],
-      "cn": ["dbas"],
-      "gidNumber": ["1004"],
-      "memberUid": ["dba1"]
+      "objectClass": [
+        "posixGroup"
+      ],
+      "cn": [
+        "dbas"
+      ],
+      "gidNumber": [
+        "1004"
+      ],
+      "memberUid": [
+        "dba1"
+      ]
     }
   },
   {
     "dn": "cn=security,ou=groups,dc=example,dc=com",
     "attributes": {
-      "objectClass": ["posixGroup"],
-      "cn": ["security"],
-      "gidNumber": ["1005"],
-      "memberUid": ["sec1", "sec2"]
+      "objectClass": [
+        "posixGroup"
+      ],
+      "cn": [
+        "security"
+      ],
+      "gidNumber": [
+        "1005"
+      ],
+      "memberUid": [
+        "sec1",
+        "sec2"
+      ]
     }
   },
   {
     "dn": "cn=dev,ou=groups,dc=example,dc=com",
     "attributes": {
-      "objectClass": ["posixGroup"],
-      "cn": ["dev"],
-      "gidNumber": ["1006"],
-      "memberUid": ["dev1", "dev2", "dev3"]
+      "objectClass": [
+        "posixGroup"
+      ],
+      "cn": [
+        "dev"
+      ],
+      "gidNumber": [
+        "1006"
+      ],
+      "memberUid": [
+        "dev1",
+        "dev2",
+        "dev3"
+      ]
     }
   },
   {
     "dn": "cn=qa,ou=groups,dc=example,dc=com",
     "attributes": {
-      "objectClass": ["posixGroup"],
-      "cn": ["qa"],
-      "gidNumber": ["1007"],
-      "memberUid": ["qa1", "qa2"]
+      "objectClass": [
+        "posixGroup"
+      ],
+      "cn": [
+        "qa"
+      ],
+      "gidNumber": [
+        "1007"
+      ],
+      "memberUid": [
+        "qa1",
+        "qa2"
+      ]
     }
   },
   {
     "dn": "cn=ops,ou=groups,dc=example,dc=com",
     "attributes": {
-      "objectClass": ["posixGroup"],
-      "cn": ["ops"],
-      "gidNumber": ["1008"],
-      "memberUid": ["ops1", "ops2", "ops3"]
+      "objectClass": [
+        "posixGroup"
+      ],
+      "cn": [
+        "ops"
+      ],
+      "gidNumber": [
+        "1008"
+      ],
+      "memberUid": [
+        "ops1",
+        "ops2",
+        "ops3"
+      ]
     }
   },
   {
     "dn": "cn=cloud,ou=groups,dc=example,dc=com",
     "attributes": {
-      "objectClass": ["posixGroup"],
-      "cn": ["cloud"],
-      "gidNumber": ["1009"],
-      "memberUid": ["cloud1", "cloud2"]
+      "objectClass": [
+        "posixGroup"
+      ],
+      "cn": [
+        "cloud"
+      ],
+      "gidNumber": [
+        "1009"
+      ],
+      "memberUid": [
+        "cloud1",
+        "cloud2"
+      ]
     }
   }
 ]
